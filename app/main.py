@@ -376,13 +376,6 @@ def edit_client(id):
 @app.route("/clients/<int:id>")
 def client_fiche(id):
     client = Client.query.get_or_404(id)
-    # On peut aussi afficher ses sites, matériels, tickets
-    tickets = Ticket.query.filter_by(id_client=id).order_by(Ticket.id.desc()).all()
-    materiels = Materiel.query.filter_by(id_client=id).order_by(Materiel.id).all()
-    return render_template("client_fiche.html", client=client, tickets=tickets, materiels=materiels)
-@app.route("/clients/<int:id>")
-def client_fiche(id):
-    client = Client.query.get_or_404(id)
     tickets = Ticket.query.filter_by(id_client=id).order_by(Ticket.id.desc()).all()
     materiels = Materiel.query.filter_by(id_client=id).order_by(Materiel.id).all()
     logs = ContractLog.query.filter_by(client_id=id).order_by(ContractLog.created_at.desc()).all()
