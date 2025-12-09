@@ -17,7 +17,7 @@
 
 <nav>
   <a href="/">Clients</a>
-  <a href="/materiels">Matériels</a>
+  <a href="/materiels">Mat&eacute;riels</a>
   <a href="/tickets">Tickets</a>
 </nav>
 
@@ -30,54 +30,83 @@
 <form method="post">
   <label for="id_client">Client</label>
   <select name="id_client" id="id_client" required>
+    <option value="" disabled selected>-- Choisir un client --</option>
     {% for c in clients %}
       <option value="{{ c.id }}">{{ c.nom }}</option>
     {% endfor %}
   </select>
 
-<label>Matériels concernés (optionnel, plusieurs possibles)</label>
-<div style="border:1px solid #ccc; padding:8px; max-height:200px; overflow:auto;">
-  {% for m in materiels %}
-    <label style="display:block; margin-bottom:4px;">
-      <input type="checkbox" name="materiels_ids" value="{{ m.id }}">
-      [CLT-{{ "%04d"|format(m.client.id) }}] {{ m.client.nom }} –
-      {{ m.type }} {{ m.modele }} ({{ m.numero_serie }})
-    </label>
-  {% endfor %}
+<label>Mat&eacute;riels concern&eacute;s (optionnel, plusieurs possibles)</label>
+<div id="materiels-container" style="border:1px solid #ccc; padding:8px; max-height:200px; overflow:auto;">
+  <p id="materiels-placeholder" style="margin:0; color:#555;">S&eacute;lectionnez un client pour afficher les mat&eacute;riels.</p>
 </div>
-<label>Sites / agences concernés (optionnel)</label>
+
+<label>Sites / agences concern&eacute;s (optionnel)</label>
 <div id="sites-container" style="border:1px solid #ccc; padding:8px; max-height:200px; overflow:auto;">
-  {% for s in sites %}
-    <label
-      class="site-item"
-      data-client-id="{{ s.id_client }}"
-      style="display:none; margin-bottom:4px;"
-    >
-      <input type="checkbox" name="sites_ids" value="{{ s.id }}">
-      [CLT-{{ "%04d"|format(s.client.id) }}] {{ s.client.nom }} – {{ s.nom }}
-      {% if s.ville %}({{ s.ville }}){% endif %}
-    </label>
-  {% endfor %}
+  <p id="sites-placeholder" style="margin:0; color:#555;">S&eacute;lectionnez un client pour afficher les sites.</p>
 </div>
 
 <script>
-  function updateSitesForClient() {
-    const clientSelect = document.getElementById("id_client");
-    const clientId = clientSelect.value;
-    const items = document.querySelectorAll(".site-item");
-    items.forEach(el => {
-      if (el.getAttribute("data-client-id") === clientId) {
-        el.style.display = "block";
-      } else {
-        el.style.display = "none";
-        const cb = el.querySelector('input[type="checkbox"]');
-        if (cb) cb.checked = false;
-      }
+  const clientSelect = document.getElementById("id_client");
+  const materielsContainer = document.getElementById("materiels-container");
+  const sitesContainer = document.getElementById("sites-container");
+
+  function setPlaceholder(container, text) {
+    container.innerHTML = `<p style="margin:0; color:#555;">${text}</p>`;
+  }
+
+  function renderCheckboxList(container, items, inputName) {
+    container.innerHTML = "";
+    if (!items.length) {
+      setPlaceholder(container, "Aucun r&eacute;sultat pour ce client.");
+      return;
+    }
+
+    items.forEach(item => {
+      const label = document.createElement("label");
+      label.style.display = "block";
+      label.style.marginBottom = "4px";
+
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.name = inputName;
+      input.value = item.id;
+
+      label.appendChild(input);
+      label.append(` ${item.label}`);
+      container.appendChild(label);
     });
   }
-  document.getElementById("id_client").addEventListener("change", updateSitesForClient);
+
+  async function loadDataForClient(clientId) {
+    if (!clientId) {
+      setPlaceholder(materielsContainer, "S&eacute;lectionnez un client pour afficher les mat&eacute;riels.");
+      setPlaceholder(sitesContainer, "S&eacute;lectionnez un client pour afficher les sites.");
+      return;
+    }
+
+    setPlaceholder(materielsContainer, "Chargement des mat&eacute;riels...");
+    setPlaceholder(sitesContainer, "Chargement des sites...");
+
+    try {
+      const response = await fetch(`/api/client/${clientId}/data`);
+      if (!response.ok) throw new Error("fetch");
+      const data = await response.json();
+
+      renderCheckboxList(materielsContainer, data.materiels || [], "materiels_ids");
+      renderCheckboxList(sitesContainer, data.sites || [], "sites_ids");
+    } catch (err) {
+      setPlaceholder(materielsContainer, "Impossible de charger les mat&eacute;riels.");
+      setPlaceholder(sitesContainer, "Impossible de charger les sites.");
+    }
+  }
+
+  clientSelect.addEventListener("change", (e) => {
+    loadDataForClient(e.target.value);
+  });
+
   // Init au chargement
-  updateSitesForClient();
+  loadDataForClient(clientSelect.value);
 </script>
 
   <label for="type">Type</label>
@@ -86,7 +115,7 @@
     <option value="demande">Demande</option>
   </select>
 
-  <label for="priorite">Priorité</label>
+  <label for="priorite">Priorit&eacute;</label>
   <select name="priorite" id="priorite" required>
     <option value="basse">Basse</option>
     <option value="normale" selected>Normale</option>
@@ -100,10 +129,10 @@
   <label for="description">Description</label>
   <textarea name="description" id="description" rows="5"></textarea>
 
-  <button type="submit">Créer le ticket</button>
+  <button type="submit">Cr&eacute;er le ticket</button>
 </form>
 
-<p><a href="/tickets">← Retour à la liste</a></p>
+<p><a href="/tickets">&larr; Retour &agrave; la liste</a></p>
 
 </body>
 </html>
