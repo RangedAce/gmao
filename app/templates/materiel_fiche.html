@@ -13,8 +13,9 @@
 
 <h1>Matériel #{{ m.id }}</h1>
 
-<p><span>Client :</span>CLT-{{ "%04d"|format(m.client.id) }} – {{ m.client.nom }}</p>
-<p><span>Type :</span> {{ m.type }}</p>
+<p><span>Client :</span> CLT-{{ "%04d"|format(m.client.id) }} - {{ m.client.nom }}</p>
+<p><span>Catégorie :</span> {{ m.category.name if m.category else "N/A" }}</p>
+<p><span>Type :</span> {{ m.materiel_type.name if m.materiel_type else m.type }}</p>
 <p><span>Modèle :</span> {{ m.modele }}</p>
 <p><span>Numéro de série :</span> {{ m.numero_serie }}</p>
 <p><span>Date installation :</span> {{ m.date_installation }}</p>
@@ -22,7 +23,7 @@
 <p><span>Statut :</span> {{ m.statut }}</p>
 
 <p>
-<a href="/materiels/{{ m.id }}/edit">✏️ Modifier</a> |
+  <a href="/materiels/{{ m.id }}/edit">Modifier</a> |
   <a href="/materiels">← Retour liste</a>
 </p>
 

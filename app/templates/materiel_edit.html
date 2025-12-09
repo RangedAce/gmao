@@ -2,11 +2,9 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Modifier matériel #{{ m.id }}</title>
+  <title>Modifier le matériel</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
-    nav a { margin-right: 10px; }
-    form { max-width: 600px; }
     label { display: block; margin-top: 10px; }
     input, select { width: 100%; padding: 6px; margin-top: 4px; }
     button { margin-top: 15px; padding: 8px 12px; }
@@ -14,48 +12,47 @@
 </head>
 <body>
 
-<nav>
-  <a href="/">Clients</a>
-  <a href="/materiels">Matériels</a>
-  <a href="/tickets">Tickets</a>
-  <span style="float:right;">
-    {% if current_user %}
-      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
-      — <a href="/logout">Déconnexion</a>
-    {% endif %}
-  </span>
-</nav>
-<hr>
-
-<h1>Modifier le matériel #{{ m.id }}</h1>
+<h1>Modifier le matériel</h1>
 
 <form method="post">
+
   <label for="id_client">Client</label>
   <select name="id_client" id="id_client" required>
     {% for c in clients %}
-      <option value="{{ c.id }}" {% if c.id == m.id_client %}selected{% endif %}>
-        CLT-{{ "%04d"|format(c.id) }} – {{ c.nom }}
-      </option>
+      <option value="{{ c.id }}" {% if c.id == m.id_client %}selected{% endif %}>{{ c.nom }}</option>
     {% endfor %}
   </select>
 
-  <label for="type">Type</label>
-  <input type="text" id="type" name="type" value="{{ m.type }}" required>
+  <label for="category_id">Catégorie</label>
+  <select name="category_id" id="category_id" required>
+    <option value="">-- Choisir --</option>
+    {% for cat in categories %}
+      <option value="{{ cat.id }}" {% if cat.id == m.category_id %}selected{% endif %}>{{ cat.name }}</option>
+    {% endfor %}
+  </select>
 
-  <label for="modele">Modèle</label>
-  <input type="text" id="modele" name="modele" value="{{ m.modele }}" required>
+  <label for="type_id">Type</label>
+  <select name="type_id" id="type_id" required>
+    <option value="">-- Choisir --</option>
+    {% for t in types %}
+      <option value="{{ t.id }}" data-cat="{{ t.category_id }}" {% if t.id == m.type_id %}selected{% endif %}>{{ t.name }}</option>
+    {% endfor %}
+  </select>
 
-  <label for="numero_serie">Numéro de série</label>
-  <input type="text" id="numero_serie" name="numero_serie" value="{{ m.numero_serie }}" required>
+  <label>Modèle</label>
+  <input type="text" name="modele" value="{{ m.modele }}" required>
 
-  <label for="date_installation">Date d’installation</label>
-  <input type="date" id="date_installation" name="date_installation" value="{{ m.date_installation }}">
+  <label>Numéro de série</label>
+  <input type="text" name="numero_serie" value="{{ m.numero_serie }}" required>
 
-  <label for="garantie_fin">Fin de garantie</label>
-  <input type="date" id="garantie_fin" name="garantie_fin" value="{{ m.garantie_fin }}">
+  <label>Date d'installation</label>
+  <input type="date" name="date_installation" value="{{ m.date_installation }}">
 
-  <label for="statut">Statut</label>
-  <select id="statut" name="statut">
+  <label>Fin de garantie</label>
+  <input type="date" name="garantie_fin" value="{{ m.garantie_fin }}">
+
+  <label>Statut</label>
+  <select name="statut">
     <option value="en service" {% if m.statut == "en service" %}selected{% endif %}>En service</option>
     <option value="hs" {% if m.statut == "hs" %}selected{% endif %}>HS</option>
     <option value="retire" {% if m.statut == "retire" %}selected{% endif %}>Retiré</option>
@@ -64,7 +61,29 @@
   <button type="submit">Enregistrer</button>
 </form>
 
-<p><a href="/materiels/{{ m.id }}">← Retour à la fiche matériel</a></p>
+<p><a href="/materiels/{{ m.id }}">← Retour</a></p>
+
+<script>
+  const categorySelect = document.getElementById("category_id");
+  const typeSelect = document.getElementById("type_id");
+
+  function filterTypes() {
+    const cat = categorySelect.value;
+    const options = typeSelect.querySelectorAll("option");
+    options.forEach(opt => {
+      if (!opt.dataset.cat) return;
+      if (!cat || opt.dataset.cat === cat) {
+        opt.style.display = "block";
+      } else {
+        opt.style.display = "none";
+        if (opt.selected) opt.selected = false;
+      }
+    });
+  }
+
+  categorySelect.addEventListener("change", filterTypes);
+  filterTypes();
+</script>
 
 </body>
 </html>

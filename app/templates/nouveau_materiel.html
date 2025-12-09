@@ -23,8 +23,21 @@
     {% endfor %}
   </select>
 
-  <label>Type</label>
-  <input type="text" name="type" required>
+  <label for="category_id">Catégorie</label>
+  <select name="category_id" id="category_id" required>
+    <option value="">-- Choisir --</option>
+    {% for cat in categories %}
+      <option value="{{ cat.id }}">{{ cat.name }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="type_id">Type</label>
+  <select name="type_id" id="type_id" required>
+    <option value="">-- Choisir --</option>
+    {% for t in types %}
+      <option value="{{ t.id }}" data-cat="{{ t.category_id }}">{{ t.name }}</option>
+    {% endfor %}
+  </select>
 
   <label>Modèle</label>
   <input type="text" name="modele" required>
@@ -32,7 +45,7 @@
   <label>Numéro de série</label>
   <input type="text" name="numero_serie" required>
 
-  <label>Date d’installation</label>
+  <label>Date d'installation</label>
   <input type="date" name="date_installation">
 
   <label>Fin de garantie</label>
@@ -49,6 +62,33 @@
 </form>
 
 <p><a href="/materiels">← Retour</a></p>
+
+<script>
+  const categorySelect = document.getElementById("category_id");
+  const typeSelect = document.getElementById("type_id");
+
+  function filterTypes() {
+    const cat = categorySelect.value;
+    const options = typeSelect.querySelectorAll("option");
+    let firstVisible = null;
+    options.forEach(opt => {
+      if (!opt.dataset.cat) return;
+      if (!cat || opt.dataset.cat === cat) {
+        opt.style.display = "block";
+        if (!firstVisible) firstVisible = opt;
+      } else {
+        opt.style.display = "none";
+        opt.selected = false;
+      }
+    });
+    if (cat && firstVisible) {
+      firstVisible.selected = true;
+    }
+  }
+
+  categorySelect.addEventListener("change", filterTypes);
+  filterTypes();
+</script>
 
 </body>
 </html>

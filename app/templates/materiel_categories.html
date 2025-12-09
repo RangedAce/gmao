@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Catégories et types de matériels</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    nav a { margin-right: 10px; }
+    label { display: block; margin-top: 10px; }
+    input, select { width: 100%; padding: 6px; margin-top: 4px; }
+    button { margin-top: 10px; padding: 6px 10px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+    th, td { border: 1px solid #ccc; padding: 6px; }
+    th { background: #eee; }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/">Clients</a>
+  <a href="/materiels">Matériels</a>
+  <a href="/tickets">Tickets</a>
+  <a href="/materiels/categories">Catégories</a>
+  <span style="float:right;">
+    {% if current_user %}
+      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
+      - <a href="/logout">Déconnexion</a>
+    {% endif %}
+  </span>
+</nav>
+<hr>
+
+<h1>Catégories et types de matériels</h1>
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% if success %}<p class="success">Opération effectuée.</p>{% endif %}
+
+<h2>Ajouter une catégorie</h2>
+<form method="post">
+  <input type="hidden" name="action" value="add_category">
+  <label for="name">Nom de catégorie</label>
+  <input type="text" name="name" id="name" required>
+  <button type="submit">Ajouter</button>
+</form>
+
+<h2>Ajouter un type</h2>
+<form method="post">
+  <input type="hidden" name="action" value="add_type">
+  <label for="type_name">Nom du type</label>
+  <input type="text" name="type_name" id="type_name" required>
+
+  <label for="category_id">Catégorie</label>
+  <select name="category_id" id="category_id" required>
+    <option value="">-- Choisir --</option>
+    {% for c in categories %}
+      <option value="{{ c.id }}">{{ c.name }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Ajouter</button>
+</form>
+
+<h2>Liste</h2>
+<table>
+  <tr>
+    <th>Catégorie</th>
+    <th>Types</th>
+  </tr>
+  {% for c in categories %}
+    <tr>
+      <td>{{ c.name }}</td>
+      <td>
+        {% set type_names = [] %}
+        {% for t in types if t.category_id == c.id %}
+          {% set _ = type_names.append(t.name) %}
+        {% endfor %}
+        {{ ", ".join(type_names) if type_names else "Aucun type" }}
+      </td>
+    </tr>
+  {% endfor %}
+</table>
+
+<p><a href="/">← Retour</a></p>
+
+</body>
+</html>

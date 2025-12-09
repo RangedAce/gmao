@@ -17,7 +17,7 @@
   <span style="float:right;">
     {% if current_user %}
       Connecté : {{ current_user.full_name }} ({{ current_user.role }})
-      — <a href="/logout">Déconnexion</a>
+      - <a href="/logout">Déconnexion</a>
     {% endif %}
   </span>
 </nav>
@@ -28,23 +28,26 @@
 
 <h1>Matériels</h1>
 
-<a href="/materiels/nouveau">➕ Ajouter un matériel</a>
+<a href="/materiels/nouveau">→ Ajouter un matériel</a> | <a href="/materiels/categories">Catégories / Types</a>
 
 <table>
 <tr>
   <th>ID</th>
   <th>Client</th>
+  <th>Catégorie</th>
   <th>Type</th>
   <th>Modèle</th>
   <th>N° Série</th>
   <th>Statut</th>
+  <th></th>
 </tr>
 
 {% for m in materiels %}
 <tr>
   <td><a href="/materiels/{{ m.id }}">{{ m.id }}</a></td>
   <td>{{ m.client.nom }}</td>
-  <td>{{ m.type }}</td>
+  <td>{{ m.category.name if m.category else "N/A" }}</td>
+  <td>{{ m.materiel_type.name if m.materiel_type else m.type }}</td>
   <td>{{ m.modele }}</td>
   <td>{{ m.numero_serie }}</td>
   <td>{{ m.statut }}</td>

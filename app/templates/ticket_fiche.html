@@ -57,6 +57,7 @@
 <p><a href="/tickets/{{ t.id }}/edit">Modifier le ticket</a></p>
 <p><span>Type :</span> {{ t.type }}</p>
 <p><span>Priorit&eacute; :</span> {{ t.priorite }}</p>
+<p><span>Catégorie matérielle :</span> {{ t.category.name if t.category else "Non définie" }}</p>
 <p><span>&Eacute;tat :</span> {{ t.etat }}</p>
 <p><span>Date d&#39;ouverture :</span> {{ t.date_ouverture.strftime("%d/%m/%Y %H:%M") }}</p>
 {% if t.date_cloture %}

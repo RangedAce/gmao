@@ -17,7 +17,7 @@
 
 <nav>
   <a href="/">Clients</a>
-  <a href="/materiels">Mat&eacute;riels</a>
+  <a href="/materiels">Matériels</a>
   <a href="/tickets">Tickets</a>
 </nav>
 
@@ -36,20 +36,31 @@
     {% endfor %}
   </select>
 
-<label>Mat&eacute;riels concern&eacute;s (optionnel, plusieurs possibles)</label>
-<div id="materiels-container" style="border:1px solid #ccc; padding:8px; max-height:200px; overflow:auto;">
-  <p id="materiels-placeholder" style="margin:0; color:#555;">S&eacute;lectionnez un client pour afficher les mat&eacute;riels.</p>
-</div>
+  <label for="category_id">Catégorie (pour filtrer les matériels)</label>
+  <select name="category_id" id="category_id">
+    <option value="">-- Toutes --</option>
+    {% for cat in categories %}
+      <option value="{{ cat.id }}">{{ cat.name }}</option>
+    {% endfor %}
+  </select>
 
-<label>Sites / agences concern&eacute;s (optionnel)</label>
-<div id="sites-container" style="border:1px solid #ccc; padding:8px; max-height:200px; overflow:auto;">
-  <p id="sites-placeholder" style="margin:0; color:#555;">S&eacute;lectionnez un client pour afficher les sites.</p>
-</div>
+  <label>Matériels concernés (optionnel, plusieurs possibles)</label>
+  <div id="materiels-container" style="border:1px solid #ccc; padding:8px; max-height:200px; overflow:auto;">
+    <p id="materiels-placeholder" style="margin:0; color:#555;">Sélectionnez un client pour afficher les matériels.</p>
+  </div>
+
+  <label>Sites / agences concernés (optionnel)</label>
+  <div id="sites-container" style="border:1px solid #ccc; padding:8px; max-height:200px; overflow:auto;">
+    <p id="sites-placeholder" style="margin:0; color:#555;">Sélectionnez un client pour afficher les sites.</p>
+  </div>
 
 <script>
   const clientSelect = document.getElementById("id_client");
+  const categorySelect = document.getElementById("category_id");
   const materielsContainer = document.getElementById("materiels-container");
   const sitesContainer = document.getElementById("sites-container");
+
+  let cachedData = { materiels: [], sites: [] };
 
   function setPlaceholder(container, text) {
     container.innerHTML = `<p style="margin:0; color:#555;">${text}</p>`;
@@ -58,7 +69,7 @@
   function renderCheckboxList(container, items, inputName) {
     container.innerHTML = "";
     if (!items.length) {
-      setPlaceholder(container, "Aucun r&eacute;sultat pour ce client.");
+      setPlaceholder(container, "Aucun résultat pour ce client.");
       return;
     }
 
@@ -78,14 +89,23 @@
     });
   }
 
+  function applyFilters() {
+    const cat = categorySelect.value;
+    const filtered = (cachedData.materiels || []).filter(m => {
+      if (!cat) return true;
+      return String(m.category_id || "") === cat;
+    });
+    renderCheckboxList(materielsContainer, filtered, "materiels_ids");
+  }
+
   async function loadDataForClient(clientId) {
     if (!clientId) {
-      setPlaceholder(materielsContainer, "S&eacute;lectionnez un client pour afficher les mat&eacute;riels.");
-      setPlaceholder(sitesContainer, "S&eacute;lectionnez un client pour afficher les sites.");
+      setPlaceholder(materielsContainer, "Sélectionnez un client pour afficher les matériels.");
+      setPlaceholder(sitesContainer, "Sélectionnez un client pour afficher les sites.");
       return;
     }
 
-    setPlaceholder(materielsContainer, "Chargement des mat&eacute;riels...");
+    setPlaceholder(materielsContainer, "Chargement des matériels...");
     setPlaceholder(sitesContainer, "Chargement des sites...");
 
     try {
@@ -93,10 +113,11 @@
       if (!response.ok) throw new Error("fetch");
       const data = await response.json();
 
-      renderCheckboxList(materielsContainer, data.materiels || [], "materiels_ids");
+      cachedData = data;
+      applyFilters();
       renderCheckboxList(sitesContainer, data.sites || [], "sites_ids");
     } catch (err) {
-      setPlaceholder(materielsContainer, "Impossible de charger les mat&eacute;riels.");
+      setPlaceholder(materielsContainer, "Impossible de charger les matériels.");
       setPlaceholder(sitesContainer, "Impossible de charger les sites.");
     }
   }
@@ -104,6 +125,8 @@
   clientSelect.addEventListener("change", (e) => {
     loadDataForClient(e.target.value);
   });
+
+  categorySelect.addEventListener("change", applyFilters);
 
   // Init au chargement
   loadDataForClient(clientSelect.value);
@@ -115,7 +138,7 @@
     <option value="demande">Demande</option>
   </select>
 
-  <label for="priorite">Priorit&eacute;</label>
+  <label for="priorite">Priorité</label>
   <select name="priorite" id="priorite" required>
     <option value="basse">Basse</option>
     <option value="normale" selected>Normale</option>
@@ -129,10 +152,10 @@
   <label for="description">Description</label>
   <textarea name="description" id="description" rows="5"></textarea>
 
-  <button type="submit">Cr&eacute;er le ticket</button>
+  <button type="submit">Créer le ticket</button>
 </form>
 
-<p><a href="/tickets">&larr; Retour &agrave; la liste</a></p>
+<p><a href="/tickets">← Retour à la liste</a></p>
 
 </body>
 </html>

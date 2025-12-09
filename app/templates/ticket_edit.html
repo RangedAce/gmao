@@ -16,12 +16,12 @@
 
 <nav>
   <a href="/">Clients</a>
-  <a href="/materiels">Mat&eacute;riels</a>
+  <a href="/materiels">Matériels</a>
   <a href="/tickets">Tickets</a>
   <span style="float:right;">
     {% if current_user %}
-      Connect&eacute; : {{ current_user.full_name }} ({{ current_user.role }})
-      &rarr; <a href="/logout">D&eacute;connexion</a>
+      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
+      &rarr; <a href="/logout">Déconnexion</a>
     {% endif %}
   </span>
 </nav>
@@ -39,13 +39,21 @@
     {% endfor %}
   </select>
 
+  <label for="category_id">Catégorie (pour filtrer les matériels)</label>
+  <select name="category_id" id="category_id">
+    <option value="">-- Toutes --</option>
+    {% for cat in categories %}
+      <option value="{{ cat.id }}" {% if cat.id == t.category_id %}selected{% endif %}>{{ cat.name }}</option>
+    {% endfor %}
+  </select>
+
   <label for="type">Type</label>
   <select name="type" id="type" required>
     <option value="incident" {% if t.type == "incident" %}selected{% endif %}>Incident</option>
     <option value="demande" {% if t.type == "demande" %}selected{% endif %}>Demande</option>
   </select>
 
-  <label for="priorite">Priorit&eacute;</label>
+  <label for="priorite">Priorité</label>
   <select name="priorite" id="priorite" required>
     <option value="basse"    {% if t.priorite == "basse" %}selected{% endif %}>Basse</option>
     <option value="normale"  {% if t.priorite == "normale" %}selected{% endif %}>Normale</option>
@@ -59,23 +67,26 @@
   <label for="description">Description</label>
   <textarea name="description" id="description" rows="5">{{ t.description }}</textarea>
 
-  <label>Mat&eacute;riels concern&eacute;s</label>
+  <label>Matériels concernés</label>
   <div id="materiels-container" style="border:1px solid #ccc; padding:8px; max-height:220px; overflow:auto;">
-    <p id="materiels-placeholder" style="margin:0; color:#555;">S&eacute;lectionnez un client pour afficher les mat&eacute;riels.</p>
+    <p id="materiels-placeholder" style="margin:0; color:#555;">Sélectionnez un client pour afficher les matériels.</p>
   </div>
 
-  <label>Sites / agences concern&eacute;s</label>
+  <label>Sites / agences concernés</label>
   <div id="sites-container" style="border:1px solid #ccc; padding:8px; max-height:220px; overflow:auto;">
-    <p id="sites-placeholder" style="margin:0; color:#555;">S&eacute;lectionnez un client pour afficher les sites.</p>
+    <p id="sites-placeholder" style="margin:0; color:#555;">Sélectionnez un client pour afficher les sites.</p>
   </div>
 
 <script>
   const clientSelect = document.getElementById("id_client");
+  const categorySelect = document.getElementById("category_id");
   const materielsContainer = document.getElementById("materiels-container");
   const sitesContainer = document.getElementById("sites-container");
 
   const preselectedMateriels = {{ selected_ids|list|tojson }};
   const preselectedSites = {{ selected_site_ids|list|tojson }};
+
+  let cachedData = { materiels: [], sites: [] };
 
   function setPlaceholder(container, text) {
     container.innerHTML = `<p style="margin:0; color:#555;">${text}</p>`;
@@ -84,7 +95,7 @@
   function renderCheckboxList(container, items, inputName, selectedList) {
     container.innerHTML = "";
     if (!items.length) {
-      setPlaceholder(container, "Aucun r&eacute;sultat pour ce client.");
+      setPlaceholder(container, "Aucun résultat pour ce client.");
       return;
     }
 
@@ -105,36 +116,45 @@
     });
   }
 
-  async function loadDataForClient(clientId, selectedMats = [], selectedSiteIds = []) {
+  function applyFilters() {
+    const cat = categorySelect.value;
+    const filtered = (cachedData.materiels || []).filter(m => {
+      if (!cat) return true;
+      return String(m.category_id || "") === cat;
+    });
+    renderCheckboxList(materielsContainer, filtered, "materiels_ids", preselectedMateriels);
+  }
+
+  async function loadDataForClient(clientId) {
     if (!clientId) {
-      setPlaceholder(materielsContainer, "S&eacute;lectionnez un client pour afficher les mat&eacute;riels.");
-      setPlaceholder(sitesContainer, "S&eacute;lectionnez un client pour afficher les sites.");
+      setPlaceholder(materielsContainer, "Sélectionnez un client pour afficher les matériels.");
+      setPlaceholder(sitesContainer, "Sélectionnez un client pour afficher les sites.");
       return;
     }
 
-    setPlaceholder(materielsContainer, "Chargement des mat&eacute;riels...");
+    setPlaceholder(materielsContainer, "Chargement des matériels...");
     setPlaceholder(sitesContainer, "Chargement des sites...");
 
     try {
       const response = await fetch(`/api/client/${clientId}/data`);
       if (!response.ok) throw new Error("fetch");
       const data = await response.json();
-
-      renderCheckboxList(materielsContainer, data.materiels || [], "materiels_ids", selectedMats);
-      renderCheckboxList(sitesContainer, data.sites || [], "sites_ids", selectedSiteIds);
+      cachedData = data;
+      applyFilters();
+      renderCheckboxList(sitesContainer, data.sites || [], "sites_ids", preselectedSites);
     } catch (err) {
-      setPlaceholder(materielsContainer, "Impossible de charger les mat&eacute;riels.");
+      setPlaceholder(materielsContainer, "Impossible de charger les matériels.");
       setPlaceholder(sitesContainer, "Impossible de charger les sites.");
     }
   }
 
   clientSelect.addEventListener("change", (e) => {
-    // Changement de client : on vide les s&eacute;lections pr&eacute;c&eacute;dentes
-    loadDataForClient(e.target.value, [], []);
+    loadDataForClient(e.target.value);
   });
+  categorySelect.addEventListener("change", applyFilters);
 
-  // Init au chargement avec les s&eacute;lections du ticket courant
-  loadDataForClient(clientSelect.value, preselectedMateriels, preselectedSites);
+  // Init au chargement avec les sélections du ticket courant
+  loadDataForClient(clientSelect.value);
 </script>
 
   <button type="submit">Enregistrer</button>

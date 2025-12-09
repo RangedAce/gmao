@@ -45,12 +45,33 @@ class Site(db.Model):
     client = db.relationship("Client", backref="sites")
 
 
+class MaterielCategory(db.Model):
+    __tablename__ = "materiel_categories"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False, unique=True)
+
+    types = db.relationship("MaterielType", backref="category", cascade="all,delete-orphan")
+
+
+class MaterielType(db.Model):
+    __tablename__ = "materiel_types"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey("materiel_categories.id"), nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint("name", "category_id", name="uq_type_per_category"),
+    )
+
+
 class Materiel(db.Model):
     __tablename__ = "materiels"
     id = db.Column(db.Integer, primary_key=True)
 
     id_client = db.Column(db.Integer, db.ForeignKey("clients.id"), nullable=False)
     type = db.Column(db.String(64), nullable=False)
+    type_id = db.Column(db.Integer, db.ForeignKey("materiel_types.id"), nullable=True)
+    category_id = db.Column(db.Integer, db.ForeignKey("materiel_categories.id"), nullable=True)
     modele = db.Column(db.String(128), nullable=False)
     numero_serie = db.Column(db.String(128), nullable=False)
     date_installation = db.Column(db.String(20), nullable=True)
@@ -58,6 +79,8 @@ class Materiel(db.Model):
     statut = db.Column(db.String(32), nullable=False, default="en service")
 
     client = db.relationship("Client", backref="materiels")
+    materiel_type = db.relationship("MaterielType", backref="materiels")
+    category = db.relationship("MaterielCategory", backref="materiels")
 
 
 class User(db.Model):
@@ -92,6 +115,7 @@ class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     id_client = db.Column(db.Integer, db.ForeignKey("clients.id"), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey("materiel_categories.id"), nullable=True)
 
     titre = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
@@ -103,6 +127,7 @@ class Ticket(db.Model):
     date_cloture = db.Column(db.DateTime, nullable=True)
 
     client = db.relationship("Client")
+    category = db.relationship("MaterielCategory")
 
     materiels = db.relationship(
         "Materiel",
@@ -306,7 +331,9 @@ def api_client_data(client_id):
         "materiels": [
             {
                 "id": m.id,
-                "label": f"{m.type} {m.modele} ({m.numero_serie})"
+                "label": f"{m.type} {m.modele} ({m.numero_serie})",
+                "category_id": m.category_id,
+                "type_id": m.type_id,
             }
             for m in materiels
         ],
@@ -330,14 +357,67 @@ def liste_materiels():
     )
 
 
+@app.route("/materiels/categories", methods=["GET", "POST"])
+def gestion_categories():
+    admin = _require_admin()
+    if not admin:
+        return redirect(url_for("index"))
+
+    error = None
+    success = False
+
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add_category":
+            name = request.form.get("name", "").strip()
+            if not name:
+                error = "Nom de catégorie obligatoire."
+            elif MaterielCategory.query.filter_by(name=name).first():
+                error = "Cette catégorie existe déjà."
+            else:
+                db.session.add(MaterielCategory(name=name))
+                db.session.commit()
+                success = True
+        if action == "add_type":
+            name = request.form.get("type_name", "").strip()
+            category_id = request.form.get("category_id")
+            category = MaterielCategory.query.get(category_id)
+            if not category or not name:
+                error = "Nom de type et catégorie requis."
+            elif MaterielType.query.filter_by(name=name, category_id=category.id).first():
+                error = "Ce type existe déjà dans cette catégorie."
+            else:
+                db.session.add(MaterielType(name=name, category_id=category.id))
+                db.session.commit()
+                success = True
+
+    categories = MaterielCategory.query.order_by(MaterielCategory.name).all()
+    types = MaterielType.query.order_by(MaterielType.name).all()
+    return render_template(
+        "materiel_categories.html",
+        categories=categories,
+        types=types,
+        error=error,
+        success=success,
+    )
+
+
 @app.route("/materiels/nouveau", methods=["GET", "POST"])
 def nouveau_materiel():
     clients = Client.query.order_by(Client.nom).all()
+    categories = MaterielCategory.query.order_by(MaterielCategory.name).all()
+    types = MaterielType.query.order_by(MaterielType.name).all()
 
     if request.method == "POST":
+        type_id = request.form.get("type_id")
+        category_id = request.form.get("category_id")
+        materiel_type = MaterielType.query.get(type_id) if type_id else None
+
         m = Materiel(
             id_client=request.form.get("id_client"),
-            type=request.form.get("type"),
+            type=materiel_type.name if materiel_type else request.form.get("type"),
+            type_id=materiel_type.id if materiel_type else None,
+            category_id=materiel_type.category_id if materiel_type else category_id,
             modele=request.form.get("modele"),
             numero_serie=request.form.get("numero_serie"),
             date_installation=request.form.get("date_installation"),
@@ -348,7 +428,7 @@ def nouveau_materiel():
         db.session.commit()
         return redirect(url_for("liste_materiels"))
 
-    return render_template("nouveau_materiel.html", clients=clients)
+    return render_template("nouveau_materiel.html", clients=clients, categories=categories, types=types)
 
 
 @app.route("/materiels/<int:id>")
@@ -358,10 +438,18 @@ def materiel_fiche(id):
 def materiel_edit(id):
     materiel = Materiel.query.get_or_404(id)
     clients = Client.query.order_by(Client.nom).all()
+    categories = MaterielCategory.query.order_by(MaterielCategory.name).all()
+    types = MaterielType.query.order_by(MaterielType.name).all()
 
     if request.method == "POST":
         materiel.id_client = request.form.get("id_client")
-        materiel.type = request.form.get("type")
+        type_id = request.form.get("type_id")
+        category_id = request.form.get("category_id")
+        materiel_type = MaterielType.query.get(type_id) if type_id else None
+
+        materiel.type = materiel_type.name if materiel_type else materiel.type
+        materiel.type_id = materiel_type.id if materiel_type else None
+        materiel.category_id = materiel_type.category_id if materiel_type else category_id
         materiel.modele = request.form.get("modele")
         materiel.numero_serie = request.form.get("numero_serie")
         materiel.date_installation = request.form.get("date_installation")
@@ -371,7 +459,7 @@ def materiel_edit(id):
         db.session.commit()
         return redirect(url_for("materiel_fiche", id=materiel.id))
 
-    return render_template("materiel_edit.html", m=materiel, clients=clients)
+    return render_template("materiel_edit.html", m=materiel, clients=clients, categories=categories, types=types)
 
 
 # ==========================
@@ -388,10 +476,12 @@ def nouveau_ticket():
     clients = Client.query.order_by(Client.nom).all()
     materiels = Materiel.query.order_by(Materiel.id).all()
     sites = Site.query.order_by(Site.nom).all()
+    categories = MaterielCategory.query.order_by(MaterielCategory.name).all()
 
     if request.method == "POST":
         t = Ticket(
             id_client=request.form.get("id_client"),
+            category_id=request.form.get("category_id") or None,
             type=request.form.get("type"),
             priorite=request.form.get("priorite"),
             titre=request.form.get("titre"),
@@ -421,6 +511,7 @@ def nouveau_ticket():
         clients=clients,
         materiels=materiels,
         sites=sites,
+        categories=categories,
     )
 
 
@@ -499,6 +590,7 @@ def ticket_edit(id):
     clients = Client.query.order_by(Client.nom).all()
     materiels = Materiel.query.order_by(Materiel.id).all()
     sites = Site.query.order_by(Site.nom).all()
+    categories = MaterielCategory.query.order_by(MaterielCategory.name).all()
 
     if request.method == "POST":
         ticket.id_client = request.form.get("id_client")
@@ -506,6 +598,7 @@ def ticket_edit(id):
         ticket.priorite = request.form.get("priorite")
         ticket.titre = request.form.get("titre")
         ticket.description = request.form.get("description")
+        ticket.category_id = request.form.get("category_id") or None
 
         ticket.materiels.clear()
         materiels_ids = request.form.getlist("materiels_ids")
@@ -535,6 +628,7 @@ def ticket_edit(id):
         sites=sites,
         selected_ids=selected_mat_ids,
         selected_site_ids=selected_site_ids,
+        categories=categories,
     )
 
 
