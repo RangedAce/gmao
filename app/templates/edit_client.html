@@ -34,6 +34,28 @@
   CLT-{{ "%04d"|format(client.id) }}
 </p>
 
+<p>
+  <a href="/clients/{{ client.id }}/sites/nouveau">Ajouter un site pour ce client</a>
+</p>
+
+{% if client.sites %}
+  <h3>Sites existants</h3>
+  <table style="border-collapse: collapse; width: 100%; margin-top: 8px;">
+    <tr>
+      <th style="border:1px solid #ccc; padding:6px;">Nom</th>
+      <th style="border:1px solid #ccc; padding:6px;">Adresse</th>
+      <th style="border:1px solid #ccc; padding:6px;">Ville</th>
+    </tr>
+    {% for s in client.sites %}
+      <tr>
+        <td style="border:1px solid #ccc; padding:6px;">{{ s.nom }}</td>
+        <td style="border:1px solid #ccc; padding:6px;">{{ s.adresse }}</td>
+        <td style="border:1px solid #ccc; padding:6px;">{{ s.ville }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endif %}
+
 <form method="post">
   <label for="nom">Nom du client</label>
   <input type="text" id="nom" name="nom" value="{{ client.nom }}" required>

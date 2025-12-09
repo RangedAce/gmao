@@ -20,16 +20,17 @@
   <span style="float:right;">
     {% if current_user %}
       Connecté : {{ current_user.full_name }} ({{ current_user.role }})
-      — <a href="/logout">Déconnexion</a>
+      - <a href="/logout">Déconnexion</a>
     {% endif %}
   </span>
 </nav>
 <hr>
 
-<h1>Client CLT-{{ "%04d"|format(client.id) }} – {{ client.nom }}</h1>
+<h1>Client CLT-{{ "%04d"|format(client.id) }} - {{ client.nom }}</h1>
+
+<p><a href="/clients/{{ client.id }}/edit">Modifier ce client</a></p>
 
 <h2>Sites / agences</h2>
-<p><a href="/clients/{{ client.id }}/sites/nouveau">➕ Ajouter un site</a></p>
 
 {% if client.sites %}
   <table>
@@ -71,7 +72,7 @@
     {% for t in tickets %}
       <li>
         <a href="/tickets/{{ t.id }}">[#{{ t.id }}] {{ t.titre }}</a>
-        – {{ t.etat }} – priorité {{ t.priorite }}
+        - {{ t.etat }} - priorité {{ t.priorite }}
       </li>
     {% endfor %}
   </ul>
@@ -79,6 +80,7 @@
   <p>Aucun ticket pour ce client.</p>
 {% endif %}
 
+<p><a href="/clients/{{ client.id }}/edit">Modifier ce client</a></p>
 <p><a href="/">← Retour à la liste des clients</a></p>
 
 </body>
