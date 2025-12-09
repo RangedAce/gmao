@@ -32,7 +32,7 @@
   </select>
 
   <label for="type_id">Type</label>
-  <select name="type_id" id="type_id" required>
+  <select name="type_id" id="type_id" required disabled>
     <option value="">-- Choisir --</option>
     {% for t in types %}
       <option value="{{ t.id }}" data-cat="{{ t.category_id }}">{{ t.name }}</option>
@@ -70,20 +70,22 @@
   function filterTypes() {
     const cat = categorySelect.value;
     const options = typeSelect.querySelectorAll("option");
+    let hasVisible = false;
     let firstVisible = null;
     options.forEach(opt => {
       if (!opt.dataset.cat) return;
       if (!cat || opt.dataset.cat === cat) {
         opt.style.display = "block";
         if (!firstVisible) firstVisible = opt;
+        hasVisible = true;
       } else {
         opt.style.display = "none";
         opt.selected = false;
       }
     });
-    if (cat && firstVisible) {
-      firstVisible.selected = true;
-    }
+    typeSelect.disabled = !cat || !hasVisible;
+    if (cat && firstVisible) firstVisible.selected = true;
+    if (!cat) typeSelect.value = "";
   }
 
   categorySelect.addEventListener("change", filterTypes);

@@ -18,12 +18,12 @@
 
 <nav>
   <a href="/">Clients</a>
-  <a href="/materiels">Mat&eacute;riels</a>
+  <a href="/materiels">Matériels</a>
   <a href="/tickets">Tickets</a>
   <span style="float:right;">
     {% if current_user %}
-      Connect&eacute; : {{ current_user.full_name }} ({{ current_user.role }})
-      &rarr; <a href="/logout">D&eacute;connexion</a>
+      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
+      &rarr; <a href="/logout">Déconnexion</a>
     {% else %}
       <a href="/login">Connexion</a>
     {% endif %}
@@ -50,18 +50,19 @@
       {% endfor %}
     </ul>
   {% else %}
-    Aucun site associ&eacute;
+    Aucun site associé
   {% endif %}
 </p>
 
 <p><a href="/tickets/{{ t.id }}/edit">Modifier le ticket</a></p>
 <p><span>Type :</span> {{ t.type }}</p>
-<p><span>Priorit&eacute; :</span> {{ t.priorite }}</p>
+<p><span>Priorité :</span> {{ t.priorite }}</p>
 <p><span>Catégorie matérielle :</span> {{ t.category.name if t.category else "Non définie" }}</p>
-<p><span>&Eacute;tat :</span> {{ t.etat }}</p>
-<p><span>Date d&#39;ouverture :</span> {{ t.date_ouverture.strftime("%d/%m/%Y %H:%M") }}</p>
+<p><span>Type matériel :</span> {{ t.materiel_type.name if t.materiel_type else "Non défini" }}</p>
+<p><span>État :</span> {{ t.etat }}</p>
+<p><span>Date d'ouverture :</span> {{ t.date_ouverture.strftime("%d/%m/%Y %H:%M") }}</p>
 {% if t.date_cloture %}
-  <p><span>Date de cl&ocirc;ture :</span> {{ t.date_cloture.strftime("%d/%m/%Y %H:%M") }}</p>
+  <p><span>Date de clôture :</span> {{ t.date_cloture.strftime("%d/%m/%Y %H:%M") }}</p>
 {% endif %}
 
 <p><span>Description :</span></p>
@@ -78,10 +79,10 @@
     <select name="etat">
       <option value="ouvert"   {% if t.etat == "ouvert" %}selected{% endif %}>Ouvert</option>
       <option value="en_cours" {% if t.etat == "en_cours" %}selected{% endif %}>En cours</option>
-      <option value="resolu"   {% if t.etat == "resolu" %}selected{% endif %}>R&eacute;solu</option>
-      <option value="cloture"  {% if t.etat == "cloture" %}selected{% endif %}>Cl&ocirc;tur&eacute;</option>
+      <option value="resolu"   {% if t.etat == "resolu" %}selected{% endif %}>Résolu</option>
+      <option value="cloture"  {% if t.etat == "cloture" %}selected{% endif %}>Clôturé</option>
     </select>
-    <button type="submit">Mettre &agrave; jour</button>
+    <button type="submit">Mettre à jour</button>
   </form>
 
   <h2>Ajouter un commentaire</h2>
@@ -103,13 +104,13 @@
         <span>{{ c.user.full_name }} ({{ c.user.role }})</span>
         <span>{{ c.created_at.strftime("%d/%m/%Y %H:%M") }}</span>
         {% if c.is_edited %}
-          <span class="badge">modifi&eacute;</span>
+          <span class="badge">modifié</span>
           {% if c.updated_at %}
             <span>({{ c.updated_at.strftime("%d/%m/%Y %H:%M") }})</span>
           {% endif %}
           {% if is_admin %}
             <details>
-              <summary>Voir ce qui a &eacute;t&eacute; modifi&eacute;</summary>
+              <summary>Voir ce qui a été modifié</summary>
               <pre>{{ edit_diffs.get(c.id, "Aucune diff disponible.") }}</pre>
             </details>
           {% endif %}
@@ -124,17 +125,17 @@
             <input type="hidden" name="action" value="edit_comment">
             <input type="hidden" name="comment_id" value="{{ c.id }}">
             <textarea name="content" rows="4" style="width:100%;" required>{{ c.content }}</textarea>
-            <button type="submit">Mettre &agrave; jour</button>
+            <button type="submit">Mettre à jour</button>
           </form>
         </details>
       {% endif %}
     </div>
   {% endfor %}
 {% else %}
-  <p>Aucun commentaire pour l&#39;instant.</p>
+  <p>Aucun commentaire pour l'instant.</p>
 {% endif %}
 
-<p><a href="/tickets">&larr; Retour &agrave; la liste</a></p>
+<p><a href="/tickets">&larr; Retour à la liste</a></p>
 
 </body>
 </html>

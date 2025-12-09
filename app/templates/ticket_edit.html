@@ -39,11 +39,19 @@
     {% endfor %}
   </select>
 
-  <label for="category_id">Catégorie (pour filtrer les matériels)</label>
+  <label for="category_id">Catégorie matérielle (optionnel)</label>
   <select name="category_id" id="category_id">
     <option value="">-- Toutes --</option>
     {% for cat in categories %}
       <option value="{{ cat.id }}" {% if cat.id == t.category_id %}selected{% endif %}>{{ cat.name }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="materiel_type_id">Type de matériel (optionnel)</label>
+  <select name="materiel_type_id" id="materiel_type_id" disabled>
+    <option value="">-- Choisir --</option>
+    {% for mt in types %}
+      <option value="{{ mt.id }}" data-cat="{{ mt.category_id }}" {% if mt.id == t.materiel_type_id %}selected{% endif %}>{{ mt.name }}</option>
     {% endfor %}
   </select>
 
@@ -80,6 +88,7 @@
 <script>
   const clientSelect = document.getElementById("id_client");
   const categorySelect = document.getElementById("category_id");
+  const typeSelect = document.getElementById("materiel_type_id");
   const materielsContainer = document.getElementById("materiels-container");
   const sitesContainer = document.getElementById("sites-container");
 
@@ -116,11 +125,31 @@
     });
   }
 
+  function filterTypeOptions() {
+    const cat = categorySelect.value;
+    const options = typeSelect.querySelectorAll("option");
+    let hasVisible = false;
+    options.forEach(opt => {
+      if (!opt.dataset.cat) return;
+      if (!cat || opt.dataset.cat === cat) {
+        opt.style.display = "block";
+        hasVisible = true;
+      } else {
+        opt.style.display = "none";
+        if (opt.selected) opt.selected = false;
+      }
+    });
+    typeSelect.disabled = !cat || !hasVisible;
+    if (!cat) typeSelect.value = "";
+  }
+
   function applyFilters() {
     const cat = categorySelect.value;
+    const typeId = typeSelect.value;
     const filtered = (cachedData.materiels || []).filter(m => {
-      if (!cat) return true;
-      return String(m.category_id || "") === cat;
+      if (cat && String(m.category_id || "") !== cat) return false;
+      if (typeId && String(m.type_id || "") !== typeId) return false;
+      return true;
     });
     renderCheckboxList(materielsContainer, filtered, "materiels_ids", preselectedMateriels);
   }
@@ -151,9 +180,14 @@
   clientSelect.addEventListener("change", (e) => {
     loadDataForClient(e.target.value);
   });
-  categorySelect.addEventListener("change", applyFilters);
+  categorySelect.addEventListener("change", () => {
+    filterTypeOptions();
+    applyFilters();
+  });
+  typeSelect.addEventListener("change", applyFilters);
 
-  // Init au chargement avec les sélections du ticket courant
+  // Init au chargement
+  filterTypeOptions();
   loadDataForClient(clientSelect.value);
 </script>
 

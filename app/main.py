@@ -116,6 +116,7 @@ class Ticket(db.Model):
 
     id_client = db.Column(db.Integer, db.ForeignKey("clients.id"), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey("materiel_categories.id"), nullable=True)
+    materiel_type_id = db.Column(db.Integer, db.ForeignKey("materiel_types.id"), nullable=True)
 
     titre = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
@@ -128,6 +129,7 @@ class Ticket(db.Model):
 
     client = db.relationship("Client")
     category = db.relationship("MaterielCategory")
+    materiel_type = db.relationship("MaterielType")
 
     materiels = db.relationship(
         "Materiel",
@@ -178,8 +180,48 @@ def _require_admin():
 # ==========================
 #  INIT BDD + USER ADMIN
 # ==========================
+def ensure_schema():
+    """Crée les tables/colonnes manquantes au démarrage (fallback sans migrations Alembic)."""
+    with db.engine.connect() as conn:
+        conn.execute(db.text("""
+        CREATE TABLE IF NOT EXISTS materiel_categories (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(128) UNIQUE NOT NULL
+        );
+        """))
+        conn.execute(db.text("""
+        CREATE TABLE IF NOT EXISTS materiel_types (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(128) NOT NULL,
+            category_id INTEGER NOT NULL REFERENCES materiel_categories(id),
+            CONSTRAINT uq_type_per_category UNIQUE (name, category_id)
+        );
+        """))
+        conn.execute(db.text("""
+        ALTER TABLE materiels
+        ADD COLUMN IF NOT EXISTS category_id INTEGER REFERENCES materiel_categories(id);
+        """))
+        conn.execute(db.text("""
+        ALTER TABLE materiels
+        ADD COLUMN IF NOT EXISTS type_id INTEGER REFERENCES materiel_types(id);
+        """))
+        conn.execute(db.text("""
+        ALTER TABLE tickets
+        ADD COLUMN IF NOT EXISTS category_id INTEGER REFERENCES materiel_categories(id);
+        """))
+        conn.execute(db.text("""
+        ALTER TABLE tickets
+        ADD COLUMN IF NOT EXISTS materiel_type_id INTEGER REFERENCES materiel_types(id);
+        """))
+        conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_materiels_category ON materiels(category_id);"))
+        conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_materiels_type ON materiels(type_id);"))
+        conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_tickets_category ON tickets(category_id);"))
+        conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_tickets_materiel_type ON tickets(materiel_type_id);"))
+
+
 with app.app_context():
     db.create_all()
+    ensure_schema()
 
     admin_login = os.getenv("GMAO_ADMIN_LOGIN")
     admin_name = os.getenv("GMAO_ADMIN_NAME", "Admin")
@@ -477,11 +519,13 @@ def nouveau_ticket():
     materiels = Materiel.query.order_by(Materiel.id).all()
     sites = Site.query.order_by(Site.nom).all()
     categories = MaterielCategory.query.order_by(MaterielCategory.name).all()
+    types = MaterielType.query.order_by(MaterielType.name).all()
 
     if request.method == "POST":
         t = Ticket(
             id_client=request.form.get("id_client"),
             category_id=request.form.get("category_id") or None,
+            materiel_type_id=request.form.get("materiel_type_id") or None,
             type=request.form.get("type"),
             priorite=request.form.get("priorite"),
             titre=request.form.get("titre"),
@@ -512,6 +556,7 @@ def nouveau_ticket():
         materiels=materiels,
         sites=sites,
         categories=categories,
+        types=types,
     )
 
 
@@ -591,6 +636,7 @@ def ticket_edit(id):
     materiels = Materiel.query.order_by(Materiel.id).all()
     sites = Site.query.order_by(Site.nom).all()
     categories = MaterielCategory.query.order_by(MaterielCategory.name).all()
+    types = MaterielType.query.order_by(MaterielType.name).all()
 
     if request.method == "POST":
         ticket.id_client = request.form.get("id_client")
@@ -599,6 +645,7 @@ def ticket_edit(id):
         ticket.titre = request.form.get("titre")
         ticket.description = request.form.get("description")
         ticket.category_id = request.form.get("category_id") or None
+        ticket.materiel_type_id = request.form.get("materiel_type_id") or None
 
         ticket.materiels.clear()
         materiels_ids = request.form.getlist("materiels_ids")
@@ -629,6 +676,7 @@ def ticket_edit(id):
         selected_ids=selected_mat_ids,
         selected_site_ids=selected_site_ids,
         categories=categories,
+        types=types,
     )
 
 
