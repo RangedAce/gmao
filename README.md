@@ -23,17 +23,16 @@ C’est une solution légère, auto-hébergeable et pensée pour un usage intern
 
 ## 🏗️ Architecture technique
 
-gmao/
-│── app/
-│ ├── main.py # Application Flask
-│ ├── templates/ # Pages HTML (Jinja2)
-│ ├── static/ # CSS, JS, images
-│ ├── requirements.txt # Dépendances Python
-│
-│── docker-compose.yml # Stack Docker
-│── .gitignore
-│── README.md
-
+    gmao/
+    ├── app/
+    │   ├── main.py                # Application Flask
+    │   ├── templates/             # Pages HTML (Jinja2)
+    │   ├── static/                # CSS, JS, images
+    │   ├── requirements.txt       # Dépendances Python
+    │
+    ├── docker-compose.yml         # Stack Docker
+    ├── .gitignore
+    └── README.md
 
 ---
 
@@ -88,7 +87,7 @@ gmao/
 ### 1. Cloner le dépôt
 
 ```bash
-git clone https://github.com/<ton_user>/gmao.git
+git clone https://github.com/rangedace/gmao.git
 cd gmao
 ```
 
