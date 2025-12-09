@@ -5,6 +5,7 @@ from flask import (
     Flask, render_template, request,
     redirect, url_for, session, jsonify
 )
+import difflib
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -125,9 +126,17 @@ class TicketComment(db.Model):
 
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, nullable=True)
+    previous_content = db.Column(db.Text, nullable=True)
+    last_editor_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
     ticket = db.relationship("Ticket", backref="comments")
     user = db.relationship("User", backref="comments")
+    last_editor = db.relationship("User", foreign_keys=[last_editor_id])
+
+    @property
+    def is_edited(self):
+        return self.updated_at is not None
 
 
 # ==========================
@@ -426,12 +435,50 @@ def ticket_fiche(id):
                 ticket.date_cloture = None
             db.session.commit()
 
+        if action == "edit_comment":
+            comment_id = request.form.get("comment_id")
+            new_content = request.form.get("content", "").strip()
+            comment = TicketComment.query.get_or_404(comment_id)
+
+            # sécurité : on ne modifie que les commentaires du ticket courant
+            if comment.ticket_id != ticket.id:
+                return redirect(url_for("ticket_fiche", id=id))
+
+            is_admin = user.role == "admin"
+            if comment.user_id != user.id and not is_admin:
+                return redirect(url_for("ticket_fiche", id=id))
+
+            if new_content and new_content != comment.content:
+                comment.previous_content = comment.content
+                comment.content = new_content
+                comment.updated_at = datetime.now()
+                comment.last_editor_id = user.id
+                db.session.commit()
+
         return redirect(url_for("ticket_fiche", id=id))
 
     comments = TicketComment.query.filter_by(ticket_id=id)\
                                   .order_by(TicketComment.created_at.asc()).all()
 
-    return render_template("ticket_fiche.html", t=ticket, comments=comments)
+    is_admin = False
+    if "user_id" in session:
+        current_user = User.query.get(session["user_id"])
+        is_admin = current_user.role == "admin"
+
+    edit_diffs = {}
+    if is_admin:
+        for c in comments:
+            if c.previous_content:
+                diff_lines = difflib.unified_diff(
+                    c.previous_content.splitlines(),
+                    c.content.splitlines(),
+                    fromfile="avant",
+                    tofile="apres",
+                    lineterm="",
+                )
+                edit_diffs[c.id] = "\n".join(diff_lines)
+
+    return render_template("ticket_fiche.html", t=ticket, comments=comments, edit_diffs=edit_diffs, is_admin=is_admin)
 
 @app.route("/tickets/<int:id>/edit", methods=["GET", "POST"])
 def ticket_edit(id):
