@@ -90,19 +90,22 @@ gmao/
 ```bash
 git clone https://github.com/<ton_user>/gmao.git
 cd gmao
+```
 
-2. Lancer la stack
+## 2. Lancer la stack
+```bash
 docker compose up -d
-
+```
 
 L’application Flask et PostgreSQL démarrent automatiquement.
 
-🔑 Variables d’environnement
+## 🔑 Variables d’environnement
+```bash
 DATABASE_URL=postgresql+psycopg2://gmao:change_me@gmao_db:5432/gmao
 SECRET_KEY=une_chaine_secrete
 GMAO_ADMIN_LOGIN=admin
 GMAO_ADMIN_PASSWORD=motdepasse
 GMAO_ADMIN_NAME=Administrateur
-
+```
 
 Au premier lancement, l’utilisateur admin est créé automatiquement.
