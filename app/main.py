@@ -31,6 +31,21 @@ class Client(db.Model):
     __tablename__ = "clients"
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(128), nullable=False)
+    contract_type = db.Column(db.String(32), nullable=False, default="none")  # none | credit_time | credit_point
+    contract_balance = db.Column(db.Float, nullable=True)  # heures ou points selon le type
+
+
+class ContractLog(db.Model):
+    __tablename__ = "contract_logs"
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey("clients.id"), nullable=False)
+    ticket_id = db.Column(db.Integer, db.ForeignKey("tickets.id"), nullable=False)
+    kind = db.Column(db.String(32), nullable=False)  # credit_time | credit_point
+    amount = db.Column(db.Float, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    note = db.Column(db.Text, nullable=True)
+
+    client = db.relationship("Client", backref="contract_logs")
 
 class Site(db.Model):
     __tablename__ = "sites"
@@ -217,6 +232,27 @@ def ensure_schema():
         conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_materiels_type ON materiels(type_id);"))
         conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_tickets_category ON tickets(category_id);"))
         conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_tickets_materiel_type ON tickets(materiel_type_id);"))
+        conn.execute(db.text("""
+        ALTER TABLE clients
+        ADD COLUMN IF NOT EXISTS contract_type VARCHAR(32) NOT NULL DEFAULT 'none';
+        """))
+        conn.execute(db.text("""
+        ALTER TABLE clients
+        ADD COLUMN IF NOT EXISTS contract_balance FLOAT;
+        """))
+        conn.execute(db.text("""
+        CREATE TABLE IF NOT EXISTS contract_logs (
+            id SERIAL PRIMARY KEY,
+            client_id INTEGER NOT NULL REFERENCES clients(id),
+            ticket_id INTEGER NOT NULL REFERENCES tickets(id),
+            kind VARCHAR(32) NOT NULL,
+            amount FLOAT NOT NULL,
+            created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
+            note TEXT
+        );
+        """))
+        conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_contract_logs_client ON contract_logs(client_id);"))
+        conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_contract_logs_ticket ON contract_logs(ticket_id);"))
 
 
 with app.app_context():
@@ -309,9 +345,12 @@ def index():
 def nouveau_client():
     if request.method == "POST":
         nom = request.form.get("nom", "").strip()
+        contract_type = request.form.get("contract_type", "none")
+        contract_balance = request.form.get("contract_balance")
+        balance_value = float(contract_balance) if contract_balance else None
         if not nom:
             return render_template("nouveau_client.html", error="Nom obligatoire")
-        db.session.add(Client(nom=nom))
+        db.session.add(Client(nom=nom, contract_type=contract_type, contract_balance=balance_value))
         db.session.commit()
         return redirect(url_for("index"))
     return render_template("nouveau_client.html")
@@ -321,9 +360,14 @@ def edit_client(id):
 
     if request.method == "POST":
         nom = request.form.get("nom", "").strip()
+        contract_type = request.form.get("contract_type", "none")
+        contract_balance = request.form.get("contract_balance")
+        balance_value = float(contract_balance) if contract_balance else None
         if not nom:
             return render_template("edit_client.html", client=client, error="Le nom est obligatoire")
         client.nom = nom
+        client.contract_type = contract_type
+        client.contract_balance = balance_value
         db.session.commit()
         return redirect(url_for("index"))
 
@@ -336,6 +380,14 @@ def client_fiche(id):
     tickets = Ticket.query.filter_by(id_client=id).order_by(Ticket.id.desc()).all()
     materiels = Materiel.query.filter_by(id_client=id).order_by(Materiel.id).all()
     return render_template("client_fiche.html", client=client, tickets=tickets, materiels=materiels)
+@app.route("/clients/<int:id>")
+def client_fiche(id):
+    client = Client.query.get_or_404(id)
+    tickets = Ticket.query.filter_by(id_client=id).order_by(Ticket.id.desc()).all()
+    materiels = Materiel.query.filter_by(id_client=id).order_by(Materiel.id).all()
+    logs = ContractLog.query.filter_by(client_id=id).order_by(ContractLog.created_at.desc()).all()
+    return render_template("client_fiche.html", client=client, tickets=tickets, materiels=materiels, contract_logs=logs)
+
 @app.route("/clients/<int:client_id>/sites/nouveau", methods=["GET", "POST"])
 def nouveau_site(client_id):
     client = Client.query.get_or_404(client_id)
@@ -564,6 +616,7 @@ def nouveau_ticket():
 def ticket_fiche(id):
     ticket = Ticket.query.get_or_404(id)
 
+    error_status = None
     if request.method == "POST":
         user = User.query.get(session["user_id"])
         action = request.form.get("action")
@@ -582,7 +635,63 @@ def ticket_fiche(id):
                 ticket.date_cloture = datetime.now()
             else:
                 ticket.date_cloture = None
-            db.session.commit()
+            # Gestion des crédits contrats
+            if new_status in ("resolu", "cloture"):
+                client = ticket.client
+                # éviter double décompte : check log existant
+                already_logged = ContractLog.query.filter_by(ticket_id=ticket.id).first()
+                if not already_logged and client.contract_type in ("credit_time", "credit_point"):
+                    if client.contract_type == "credit_time":
+                        duration = request.form.get("duration_hours")
+                        start = request.form.get("start_time")
+                        end = request.form.get("end_time")
+                        hours = None
+                        if duration:
+                            try:
+                                hours = float(duration)
+                            except ValueError:
+                                hours = None
+                        elif start and end:
+                            try:
+                                fmt = "%H:%M"
+                                start_dt = datetime.strptime(start, fmt)
+                                end_dt = datetime.strptime(end, fmt)
+                                delta = (end_dt - start_dt).total_seconds() / 3600
+                                hours = max(delta, 0)
+                            except Exception:
+                                hours = None
+                        if hours is None or hours <= 0:
+                            error_status = "Durée invalide pour le crédit temps."
+                        else:
+                            client.contract_balance = (client.contract_balance or 0) - hours
+                            db.session.add(ContractLog(
+                                client_id=client.id,
+                                ticket_id=ticket.id,
+                                kind="credit_time",
+                                amount=hours,
+                                note=f"Ticket #{ticket.id}"
+                            ))
+                    elif client.contract_type == "credit_point":
+                        points = request.form.get("points_used")
+                        pts_val = None
+                        if points:
+                            try:
+                                pts_val = float(points)
+                            except ValueError:
+                                pts_val = None
+                        if pts_val is None or pts_val <= 0:
+                            error_status = "Nombre d'interventions invalide pour le crédit points."
+                        else:
+                            client.contract_balance = (client.contract_balance or 0) - pts_val
+                            db.session.add(ContractLog(
+                                client_id=client.id,
+                                ticket_id=ticket.id,
+                                kind="credit_point",
+                                amount=pts_val,
+                                note=f"Ticket #{ticket.id}"
+                            ))
+            if not error_status:
+                db.session.commit()
 
         if action == "edit_comment":
             comment_id = request.form.get("comment_id")
@@ -603,6 +712,25 @@ def ticket_fiche(id):
                 comment.updated_at = datetime.now()
                 comment.last_editor_id = user.id
                 db.session.commit()
+
+        if error_status:
+            comments = TicketComment.query.filter_by(ticket_id=id)\
+                                          .order_by(TicketComment.created_at.asc()).all()
+            is_admin = user.role == "admin"
+            edit_diffs = {}
+            if is_admin:
+                for c in comments:
+                    if c.previous_content:
+                        diff_lines = difflib.unified_diff(
+                            c.previous_content.splitlines(),
+                            c.content.splitlines(),
+                            fromfile="avant",
+                            tofile="apres",
+                            lineterm="",
+                        )
+                        edit_diffs[c.id] = "\n".join(diff_lines)
+            contract_logs = ContractLog.query.filter_by(ticket_id=id).order_by(ContractLog.created_at.asc()).all()
+            return render_template("ticket_fiche.html", t=ticket, comments=comments, edit_diffs=edit_diffs, is_admin=is_admin, contract_logs=contract_logs, error_status=error_status)
 
         return redirect(url_for("ticket_fiche", id=id))
 
@@ -627,7 +755,12 @@ def ticket_fiche(id):
                 )
                 edit_diffs[c.id] = "\n".join(diff_lines)
 
-    return render_template("ticket_fiche.html", t=ticket, comments=comments, edit_diffs=edit_diffs, is_admin=is_admin)
+    contract_logs = ContractLog.query.filter_by(ticket_id=id).order_by(ContractLog.created_at.asc()).all()
+
+    if error_status:
+        return render_template("ticket_fiche.html", t=ticket, comments=comments, edit_diffs=edit_diffs, is_admin=is_admin, contract_logs=contract_logs, error_status=error_status)
+
+    return render_template("ticket_fiche.html", t=ticket, comments=comments, edit_diffs=edit_diffs, is_admin=is_admin, contract_logs=contract_logs)
 
 @app.route("/tickets/<int:id>/edit", methods=["GET", "POST"])
 def ticket_edit(id):

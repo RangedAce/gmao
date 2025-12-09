@@ -74,6 +74,7 @@
 
 {% if current_user %}
   <h2>Modifier le statut</h2>
+  {% if error_status %}<p style="color:red;">{{ error_status }}</p>{% endif %}
   <form method="post">
     <input type="hidden" name="action" value="status">
     <select name="etat">
@@ -82,6 +83,22 @@
       <option value="resolu"   {% if t.etat == "resolu" %}selected{% endif %}>Résolu</option>
       <option value="cloture"  {% if t.etat == "cloture" %}selected{% endif %}>Clôturé</option>
     </select>
+
+    {% if t.client.contract_type == "credit_time" %}
+      <p>Décompte crédit temps :</p>
+      <label>Durée (heures)
+        <input type="number" step="0.1" min="0" name="duration_hours">
+      </label>
+      <p style="margin:4px 0;">ou</p>
+      <label>Heure début <input type="time" name="start_time"></label>
+      <label>Heure fin <input type="time" name="end_time"></label>
+    {% elif t.client.contract_type == "credit_point" %}
+      <p>Décompte crédit points :</p>
+      <label>Nombre d'interventions/connexions
+        <input type="number" step="1" min="1" name="points_used">
+      </label>
+    {% endif %}
+
     <button type="submit">Mettre à jour</button>
   </form>
 
@@ -136,6 +153,15 @@
 {% endif %}
 
 <p><a href="/tickets">&larr; Retour à la liste</a></p>
+
+{% if contract_logs %}
+  <h2>Décomptes contrat liés à ce ticket</h2>
+  <ul>
+    {% for log in contract_logs %}
+      <li>{{ log.created_at.strftime("%d/%m/%Y %H:%M") }} - {{ "Temps (h)" if log.kind=="credit_time" else "Points" }} : {{ log.amount }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
 
 </body>
 </html>

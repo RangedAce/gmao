@@ -30,6 +30,39 @@
 
 <p><a href="/clients/{{ client.id }}/edit">Modifier ce client</a></p>
 
+<h2>Contrat</h2>
+<p>
+  Type : 
+  {% if client.contract_type == "credit_time" %}
+    Crédit temps
+  {% elif client.contract_type == "credit_point" %}
+    Crédit points
+  {% else %}
+    Pas de contrat
+  {% endif %}
+</p>
+<p>Solde : {{ client.contract_balance if client.contract_balance is not none else "N/A" }}</p>
+
+{% if contract_logs %}
+  <h3>Historique des décomptes</h3>
+  <table>
+    <tr>
+      <th>Date</th>
+      <th>Ticket</th>
+      <th>Type</th>
+      <th>Montant</th>
+    </tr>
+    {% for log in contract_logs %}
+      <tr>
+        <td>{{ log.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+        <td><a href="/tickets/{{ log.ticket_id }}">#{{ log.ticket_id }}</a></td>
+        <td>{{ "Temps (h)" if log.kind == "credit_time" else "Points" }}</td>
+        <td>{{ log.amount }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endif %}
+
 <h2>Sites / agences</h2>
 
 {% if client.sites %}
@@ -80,7 +113,6 @@
   <p>Aucun ticket pour ce client.</p>
 {% endif %}
 
-<p><a href="/clients/{{ client.id }}/edit">Modifier ce client</a></p>
 <p><a href="/">← Retour à la liste des clients</a></p>
 
 </body>

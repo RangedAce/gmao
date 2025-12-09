@@ -24,11 +24,21 @@
   <h1>Nouveau client</h1>
 
   <form method="post">
-    <label for="nom">Nom du client</label>
-    <input type="text" id="nom" name="nom" required>
+  <label for="nom">Nom du client</label>
+  <input type="text" id="nom" name="nom" required>
 
-    <button type="submit">Enregistrer</button>
-  </form>
+  <label for="contract_type">Contrat</label>
+  <select name="contract_type" id="contract_type">
+    <option value="none">Pas de contrat</option>
+    <option value="credit_time">Crédit temps (heures)</option>
+    <option value="credit_point">Crédit points (interventions)</option>
+  </select>
+
+  <label for="contract_balance">Valeur initiale (heures ou points)</label>
+  <input type="number" step="0.01" min="0" name="contract_balance" id="contract_balance">
+
+  <button type="submit">Enregistrer</button>
+</form>
 
   {% if error %}
     <p class="error">{{ error }}</p>
