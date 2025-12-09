@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>GMAO - Clients</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    nav a { margin-right: 10px; }
+    a.button {
+      display: inline-block;
+      padding: 8px 12px;
+      margin-top: 10px;
+      border: 1px solid #333;
+      border-radius: 4px;
+      text-decoration: none;
+      color: #333;
+    }
+    a.button:hover { background: #f2f2f2; }
+  </style>
+<nav>
+  <a href="/">Clients</a>
+  <a href="/materiels">Matériels</a>
+  <a href="/tickets">Tickets</a>
+
+  <span style="float:right;">
+    {% if current_user %}
+      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
+      — <a href="/logout">Déconnexion</a>
+    {% else %}
+      <a href="/login">Connexion</a>
+    {% endif %}
+  </span>
+</nav>
+<hr>
+
+</head>
+<body>
+  <h1>Clients</h1>
+
+  <a href="/clients/nouveau" class="button">➕ Ajouter un client</a>
+
+<h1>Clients</h1>
+
+<a href="/clients/nouveau" class="button">➕ Ajouter un client</a>
+
+{% if clients %}
+  <table>
+    <tr>
+      <th>Code</th>
+      <th>Nom</th>
+      <th>Actions</th>
+    </tr>
+    {% for c in clients %}
+      <tr>
+        <td>CLT-{{ "%04d"|format(c.id) }}</td>
+        <td>{{ c.nom }}</td>
+        <td>
+          <a href="/clients/{{ c.id }}/edit">Modifier</a>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  <p>Aucun client pour l’instant.</p>
+{% endif %}
+
+</body>
+</html>

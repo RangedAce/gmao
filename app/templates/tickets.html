@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Tickets</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    nav a { margin-right: 10px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    th { background: #eee; }
+  </style>
+<nav>
+  <a href="/">Clients</a>
+  <a href="/materiels">Matériels</a>
+  <a href="/tickets">Tickets</a>
+
+  <span style="float:right;">
+    {% if current_user %}
+      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
+      — <a href="/logout">Déconnexion</a>
+    {% endif %}
+  </span>
+</nav>
+<hr>
+
+</head>
+<body>
+
+<h1>Tickets</h1>
+
+<p><a href="/tickets/nouveau">➕ Nouveau ticket</a></p>
+
+<table>
+  <tr>
+    <th>ID</th>
+    <th>Titre</th>
+    <th>Client</th>
+    <th>Matériel</th>
+    <th>Type</th>
+    <th>Priorité</th>
+    <th>État</th>
+    <th>Ouvert le</th>
+  </tr>
+
+  {% for t in tickets %}
+  <tr>
+    <td><a href="/tickets/{{ t.id }}">{{ t.id }}</a></td>
+    <td>{{ t.titre }}</td>
+    <td>CLT-{{ "%04d"|format(t.client.id) }} – {{ t.client.nom }}</td>
+<td>
+  {% if t.materiels %}
+    {% for m in t.materiels %}
+      {{ m.type }} {{ m.modele }} ({{ m.numero_serie }}){% if not loop.last %}, {% endif %}
+    {% endfor %}
+  {% else %}
+    -
+  {% endif %}
+</td>
+
+    <td>{{ t.type }}</td>
+    <td>{{ t.priorite }}</td>
+    <td>{{ t.etat }}</td>
+    <td>{{ t.date_ouverture.strftime("%d/%m/%Y %H:%M") }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<p><a href="/">← Retour accueil</a></p>
+
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Modifier le ticket #{{ t.id }}</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    nav a { margin-right: 10px; }
+    form { max-width: 700px; }
+    label { display: block; margin-top: 10px; }
+    input, select, textarea { width: 100%; padding: 6px; margin-top: 4px; }
+    button { margin-top: 15px; padding: 8px 12px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/">Clients</a>
+  <a href="/materiels">Matériels</a>
+  <a href="/tickets">Tickets</a>
+  <span style="float:right;">
+    {% if current_user %}
+      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
+      — <a href="/logout">Déconnexion</a>
+    {% endif %}
+  </span>
+</nav>
+<hr>
+
+<h1>Modifier le ticket #{{ t.id }}</h1>
+
+<form method="post">
+  <label for="id_client">Client</label>
+  <select name="id_client" id="id_client" required>
+    {% for c in clients %}
+      <option value="{{ c.id }}" {% if c.id == t.id_client %}selected{% endif %}>
+        CLT-{{ "%04d"|format(c.id) }} – {{ c.nom }}
+      </option>
+    {% endfor %}
+  </select>
+
+  <label for="type">Type</label>
+  <select name="type" id="type" required>
+    <option value="incident" {% if t.type == "incident" %}selected{% endif %}>Incident</option>
+    <option value="demande" {% if t.type == "demande" %}selected{% endif %}>Demande</option>
+  </select>
+
+  <label for="priorite">Priorité</label>
+  <select name="priorite" id="priorite" required>
+    <option value="basse"    {% if t.priorite == "basse" %}selected{% endif %}>Basse</option>
+    <option value="normale"  {% if t.priorite == "normale" %}selected{% endif %}>Normale</option>
+    <option value="haute"    {% if t.priorite == "haute" %}selected{% endif %}>Haute</option>
+    <option value="critique" {% if t.priorite == "critique" %}selected{% endif %}>Critique</option>
+  </select>
+
+  <label for="titre">Titre</label>
+  <input type="text" name="titre" id="titre" value="{{ t.titre }}" required>
+
+  <label for="description">Description</label>
+  <textarea name="description" id="description" rows="5">{{ t.description }}</textarea>
+
+  <label>Matériels concernés</label>
+  <div style="border:1px solid #ccc; padding:8px; max-height:220px; overflow:auto;">
+    {% for m in materiels %}
+      <label style="display:block; margin-bottom:4px;">
+        <input
+          type="checkbox"
+          name="materiels_ids"
+          value="{{ m.id }}"
+          {% if m.id in selected_ids %}checked{% endif %}
+        >
+        [CLT-{{ "%04d"|format(m.client.id) }}] {{ m.client.nom }} –
+        {{ m.type }} {{ m.modele }} ({{ m.numero_serie }})
+      </label>
+    {% endfor %}
+  </div>
+<label>Sites / agences concernés</label>
+<div id="sites-container" style="border:1px solid #ccc; padding:8px; max-height:220px; overflow:auto;">
+  {% for s in sites %}
+    <label
+      class="site-item"
+      data-client-id="{{ s.id_client }}"
+      style="display:none; margin-bottom:4px;"
+    >
+      <input
+        type="checkbox"
+        name="sites_ids"
+        value="{{ s.id }}"
+        {% if s.id in selected_site_ids %}checked{% endif %}
+      >
+      [CLT-{{ "%04d"|format(s.client.id) }}] {{ s.client.nom }} – {{ s.nom }}
+      {% if s.ville %}({{ s.ville }}){% endif %}
+    </label>
+  {% endfor %}
+</div>
+
+<script>
+  function updateSitesForClient() {
+    const clientSelect = document.getElementById("id_client");
+    const clientId = clientSelect.value;
+    const items = document.querySelectorAll(".site-item");
+    items.forEach(el => {
+      if (el.getAttribute("data-client-id") === clientId) {
+        el.style.display = "block";
+      } else {
+        el.style.display = "none";
+        const cb = el.querySelector('input[type="checkbox"]');
+        if (cb && el.getAttribute("data-client-id") !== clientId) {
+          cb.checked = false;
+        }
+      }
+    });
+  }
+  document.getElementById("id_client").addEventListener("change", updateSitesForClient);
+  updateSitesForClient();
+</script>
+
+  <button type="submit">Enregistrer</button>
+</form>
+
+<p><a href="/tickets/{{ t.id }}">← Retour au ticket</a></p>
+
+</body>
+</html>

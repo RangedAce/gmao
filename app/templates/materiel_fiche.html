@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Matériel {{ m.id }}</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    p span { font-weight: bold; }
+  </style>
+</head>
+
+<body>
+
+<h1>Matériel #{{ m.id }}</h1>
+
+<p><span>Client :</span>CLT-{{ "%04d"|format(m.client.id) }} – {{ m.client.nom }}</p>
+<p><span>Type :</span> {{ m.type }}</p>
+<p><span>Modèle :</span> {{ m.modele }}</p>
+<p><span>Numéro de série :</span> {{ m.numero_serie }}</p>
+<p><span>Date installation :</span> {{ m.date_installation }}</p>
+<p><span>Fin garantie :</span> {{ m.garantie_fin }}</p>
+<p><span>Statut :</span> {{ m.statut }}</p>
+
+<p>
+<a href="/materiels/{{ m.id }}/edit">✏️ Modifier</a> |
+  <a href="/materiels">← Retour liste</a>
+</p>
+
+</body>
+</html>

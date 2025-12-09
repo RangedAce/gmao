@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Nouveau client</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    form { max-width: 400px; }
+    label { display: block; margin-top: 10px; }
+    input[type="text"] {
+      width: 100%;
+      padding: 6px;
+      margin-top: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 15px;
+      padding: 8px 12px;
+    }
+    .error { color: red; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Nouveau client</h1>
+
+  <form method="post">
+    <label for="nom">Nom du client</label>
+    <input type="text" id="nom" name="nom" required>
+
+    <button type="submit">Enregistrer</button>
+  </form>
+
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+
+  <p><a href="/">← Retour à la liste des clients</a></p>
+</body>
+</html>

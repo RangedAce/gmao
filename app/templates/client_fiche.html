@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Client {{ client.nom }}</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    nav a { margin-right: 10px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 6px; }
+    th { background: #eee; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/">Clients</a>
+  <a href="/materiels">Matériels</a>
+  <a href="/tickets">Tickets</a>
+  <span style="float:right;">
+    {% if current_user %}
+      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
+      — <a href="/logout">Déconnexion</a>
+    {% endif %}
+  </span>
+</nav>
+<hr>
+
+<h1>Client CLT-{{ "%04d"|format(client.id) }} – {{ client.nom }}</h1>
+
+<h2>Sites / agences</h2>
+<p><a href="/clients/{{ client.id }}/sites/nouveau">➕ Ajouter un site</a></p>
+
+{% if client.sites %}
+  <table>
+    <tr>
+      <th>Nom</th>
+      <th>Adresse</th>
+      <th>Ville</th>
+      <th>Notes</th>
+    </tr>
+    {% for s in client.sites %}
+      <tr>
+        <td>{{ s.nom }}</td>
+        <td>{{ s.adresse }}</td>
+        <td>{{ s.ville }}</td>
+        <td>{{ s.notes }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  <p>Aucun site enregistré pour ce client.</p>
+{% endif %}
+
+<h2>Matériels</h2>
+{% if materiels %}
+  <ul>
+    {% for m in materiels %}
+      <li>
+        <a href="/materiels/{{ m.id }}">{{ m.type }} {{ m.modele }} ({{ m.numero_serie }})</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>Aucun matériel pour ce client.</p>
+{% endif %}
+
+<h2>Tickets</h2>
+{% if tickets %}
+  <ul>
+    {% for t in tickets %}
+      <li>
+        <a href="/tickets/{{ t.id }}">[#{{ t.id }}] {{ t.titre }}</a>
+        – {{ t.etat }} – priorité {{ t.priorite }}
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>Aucun ticket pour ce client.</p>
+{% endif %}
+
+<p><a href="/">← Retour à la liste des clients</a></p>
+
+</body>
+</html>

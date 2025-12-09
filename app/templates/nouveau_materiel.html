@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Nouveau matériel</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    label { display: block; margin-top: 10px; }
+    input, select { width: 100%; padding: 6px; margin-top: 4px; }
+    button { margin-top: 15px; padding: 8px 12px; }
+  </style>
+</head>
+<body>
+
+<h1>Ajouter un matériel</h1>
+
+<form method="post">
+
+  <label for="id_client">Client</label>
+  <select name="id_client" id="id_client" required>
+    {% for c in clients %}
+      <option value="{{ c.id }}">{{ c.nom }}</option>
+    {% endfor %}
+  </select>
+
+  <label>Type</label>
+  <input type="text" name="type" required>
+
+  <label>Modèle</label>
+  <input type="text" name="modele" required>
+
+  <label>Numéro de série</label>
+  <input type="text" name="numero_serie" required>
+
+  <label>Date d’installation</label>
+  <input type="date" name="date_installation">
+
+  <label>Fin de garantie</label>
+  <input type="date" name="garantie_fin">
+
+  <label>Statut</label>
+  <select name="statut">
+    <option value="en service">En service</option>
+    <option value="hs">HS</option>
+    <option value="retire">Retiré</option>
+  </select>
+
+  <button type="submit">Enregistrer</button>
+</form>
+
+<p><a href="/materiels">← Retour</a></p>
+
+</body>
+</html>
