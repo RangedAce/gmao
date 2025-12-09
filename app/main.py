@@ -159,18 +159,19 @@ with app.app_context():
     admin_login = os.getenv("GMAO_ADMIN_LOGIN")
     admin_name = os.getenv("GMAO_ADMIN_NAME", "Admin")
     admin_password = os.getenv("GMAO_ADMIN_PASSWORD")
+    admin_role = os.getenv("GMAO_ADMIN_ROLE", "admin")
 
     if admin_login and admin_password:
         if not User.query.filter_by(login=admin_login).first():
             u = User(
                 full_name=admin_name,
                 login=admin_login,
-                role="technicien",
+                role=admin_role,
                 password_hash=generate_password_hash(admin_password),
             )
             db.session.add(u)
             db.session.commit()
-            print(f"[GMAO] Utilisateur technicien créé : {admin_login}")
+            print(f"[GMAO] Utilisateur {admin_role} créé : {admin_login}")
 
 
 # ==========================
