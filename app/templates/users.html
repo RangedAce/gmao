@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Utilisateurs</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    nav a { margin-right: 10px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 6px; }
+    th { background: #eee; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/">Clients</a>
+  <a href="/materiels">Matériels</a>
+  <a href="/tickets">Tickets</a>
+  <a href="/users">Utilisateurs</a>
+  <span style="float:right;">
+    {% if current_user %}
+      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
+      - <a href="/logout">Déconnexion</a>
+    {% endif %}
+  </span>
+</nav>
+<hr>
+
+<h1>Utilisateurs</h1>
+
+<p><a href="/users/nouveau">Créer un utilisateur</a></p>
+
+<table>
+  <tr>
+    <th>ID</th>
+    <th>Nom</th>
+    <th>Login</th>
+    <th>Rôle</th>
+  </tr>
+  {% for u in users %}
+    <tr>
+      <td>{{ u.id }}</td>
+      <td>{{ u.full_name }}</td>
+      <td>{{ u.login }}</td>
+      <td>{{ u.role }}</td>
+    </tr>
+  {% endfor %}
+</table>
+
+<p><a href="/">← Retour</a></p>
+
+</body>
+</html>

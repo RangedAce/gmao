@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Nouveau compte</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    nav a { margin-right: 10px; }
+    label { display: block; margin-top: 10px; }
+    input, select { width: 100%; padding: 6px; margin-top: 4px; }
+    button { margin-top: 15px; padding: 8px 12px; }
+    .error { color: red; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/">Clients</a>
+  <a href="/materiels">Matériels</a>
+  <a href="/tickets">Tickets</a>
+  <a href="/users">Utilisateurs</a>
+  <span style="float:right;">
+    {% if current_user %}
+      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
+      - <a href="/logout">Déconnexion</a>
+    {% endif %}
+  </span>
+</nav>
+<hr>
+
+<h1>Créer un utilisateur</h1>
+
+<form method="post">
+  <label for="full_name">Nom complet</label>
+  <input type="text" id="full_name" name="full_name" required>
+
+  <label for="login">Login</label>
+  <input type="text" id="login" name="login" required>
+
+  <label for="password">Mot de passe</label>
+  <input type="password" id="password" name="password" required>
+
+  <label for="role">Rôle</label>
+  <select id="role" name="role" required>
+    {% for r in roles %}
+      <option value="{{ r }}">{{ r }}</option>
+    {% endfor %}
+  </select>
+
+  <button type="submit">Créer</button>
+</form>
+
+{% if error %}
+  <p class="error">{{ error }}</p>
+{% endif %}
+
+<p><a href="/users">← Retour</a></p>
+
+</body>
+</html>

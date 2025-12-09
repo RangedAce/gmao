@@ -139,6 +139,17 @@ class TicketComment(db.Model):
         return self.updated_at is not None
 
 
+def _get_current_user():
+    if "user_id" not in session:
+        return None
+    return User.query.get(session["user_id"])
+
+
+def _require_admin():
+    user = _get_current_user()
+    return user if user and user.role == "admin" else None
+
+
 # ==========================
 #  INIT BDD + USER ADMIN
 # ==========================
@@ -170,7 +181,8 @@ def inject_user():
     current_user = None
     if "user_id" in session:
         current_user = User.query.get(session["user_id"])
-    return dict(current_user=current_user)
+    is_admin = bool(current_user and current_user.role == "admin")
+    return dict(current_user=current_user, is_admin=is_admin)
 
 
 # 🔒 Avant chaque requête : tout est bloqué sauf login/logout/static
@@ -523,6 +535,83 @@ def ticket_edit(id):
         selected_ids=selected_mat_ids,
         selected_site_ids=selected_site_ids,
     )
+
+
+# ==========================
+#  UTILISATEURS / PROFIL
+# ==========================
+AVAILABLE_ROLES = ("read_only", "technicien", "admin")
+
+
+@app.route("/users")
+def list_users():
+    admin = _require_admin()
+    if not admin:
+        return redirect(url_for("index"))
+
+    users = User.query.order_by(User.id).all()
+    return render_template("users.html", users=users, roles=AVAILABLE_ROLES)
+
+
+@app.route("/users/nouveau", methods=["GET", "POST"])
+def new_user():
+    admin = _require_admin()
+    if not admin:
+        return redirect(url_for("index"))
+
+    error = None
+    if request.method == "POST":
+        full_name = request.form.get("full_name", "").strip()
+        login_value = request.form.get("login", "").strip()
+        password = request.form.get("password", "")
+        role = request.form.get("role", "technicien")
+
+        if not full_name or not login_value or not password:
+            error = "Tous les champs sont obligatoires."
+        elif role not in AVAILABLE_ROLES:
+            error = "Rôle invalide."
+        elif User.query.filter_by(login=login_value).first():
+            error = "Ce login existe déjà."
+        else:
+            u = User(
+                full_name=full_name,
+                login=login_value,
+                role=role,
+                password_hash=generate_password_hash(password),
+            )
+            db.session.add(u)
+            db.session.commit()
+            return redirect(url_for("list_users"))
+
+    return render_template("new_user.html", error=error, roles=AVAILABLE_ROLES)
+
+
+@app.route("/me/password", methods=["GET", "POST"])
+def change_password():
+    user = _get_current_user()
+    if not user:
+        return redirect(url_for("login"))
+
+    error = None
+    success = False
+    if request.method == "POST":
+        old_password = request.form.get("old_password", "")
+        new_password = request.form.get("new_password", "")
+        new_password_confirm = request.form.get("new_password_confirm", "")
+
+        if not old_password or not new_password or not new_password_confirm:
+            error = "Tous les champs sont obligatoires."
+        elif not check_password_hash(user.password_hash, old_password):
+            error = "Ancien mot de passe incorrect."
+        elif new_password != new_password_confirm:
+            error = "La confirmation ne correspond pas."
+        else:
+            user.password_hash = generate_password_hash(new_password)
+            db.session.commit()
+            success = True
+
+    return render_template("change_password.html", error=error, success=success)
+
 
 # ==========================
 #  RUN

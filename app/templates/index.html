@@ -31,6 +31,12 @@
     {% endif %}
   </span>
 </nav>
+{% if current_user %}
+  <div style="margin-top:8px;">
+    <a href="/me/password">Changer mon mot de passe</a>
+    {% if is_admin %} | <a href="/users">Gérer les utilisateurs</a>{% endif %}
+  </div>
+{% endif %}
 <hr>
 
 </head>
