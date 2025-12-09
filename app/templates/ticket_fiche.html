@@ -92,10 +92,16 @@
       <p style="margin:4px 0;">ou</p>
       <label>Heure début <input type="time" name="start_time"></label>
       <label>Heure fin <input type="time" name="end_time"></label>
+      <label>Commentaire (résumé intervention)
+        <input type="text" name="contract_note">
+      </label>
     {% elif t.client.contract_type == "credit_point" %}
       <p>Décompte crédit points :</p>
       <label>Nombre d'interventions/connexions
         <input type="number" step="1" min="1" name="points_used">
+      </label>
+      <label>Commentaire (résumé intervention)
+        <input type="text" name="contract_note">
       </label>
     {% endif %}
 
@@ -158,7 +164,7 @@
   <h2>Décomptes contrat liés à ce ticket</h2>
   <ul>
     {% for log in contract_logs %}
-      <li>{{ log.created_at.strftime("%d/%m/%Y %H:%M") }} - {{ "Temps (h)" if log.kind=="credit_time" else "Points" }} : {{ log.amount }}</li>
+      <li>{{ log.created_at.strftime("%d/%m/%Y %H:%M") }} - {{ "Temps (h)" if log.kind=="credit_time" else "Points" }} : {{ log.amount }}{% if log.note %} — {{ log.note }}{% endif %}</li>
     {% endfor %}
   </ul>
 {% endif %}

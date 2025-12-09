@@ -634,6 +634,7 @@ def ticket_fiche(id):
                 # éviter double décompte : check log existant
                 already_logged = ContractLog.query.filter_by(ticket_id=ticket.id).first()
                 if not already_logged and client.contract_type in ("credit_time", "credit_point"):
+                    contract_note = (request.form.get("contract_note") or "").strip()
                     if client.contract_type == "credit_time":
                         duration = request.form.get("duration_hours")
                         start = request.form.get("start_time")
@@ -662,7 +663,7 @@ def ticket_fiche(id):
                                 ticket_id=ticket.id,
                                 kind="credit_time",
                                 amount=hours,
-                                note=f"Ticket #{ticket.id}"
+                                note=contract_note or f"Ticket #{ticket.id}"
                             ))
                     elif client.contract_type == "credit_point":
                         points = request.form.get("points_used")
@@ -681,7 +682,7 @@ def ticket_fiche(id):
                                 ticket_id=ticket.id,
                                 kind="credit_point",
                                 amount=pts_val,
-                                note=f"Ticket #{ticket.id}"
+                                note=contract_note or f"Ticket #{ticket.id}"
                             ))
             if not error_status:
                 db.session.commit()
