@@ -1,0 +1,76 @@
+# ============================================
+#  PYTHON
+# ============================================
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+
+# dépendances
+venv/
+env/
+.venv/
+pip-wheel-metadata/
+
+# fichiers de build
+build/
+dist/
+*.egg-info/
+*.egg
+
+# ============================================
+#  FLASK / APP PYTHON
+# ============================================
+
+# fichiers de config sensibles
+instance/
+.env
+.env.*
+*.env
+
+# fichiers temporaires Flask
+.flaskenv
+*.log
+
+# ============================================
+#  DOCKER / PORTAINER
+# ============================================
+
+# ne jamais commit les volumes !
+db/
+postgres/
+data/
+volumes/
+*/db/
+*/data/
+
+# fichiers générés automatiquement
+docker-compose.override.yml
+*.pid
+
+# ============================================
+#  EDITORS
+# ============================================
+
+# VSCode
+.vscode/
+.code-workspace
+
+# PyCharm / JetBrains
+.idea/
+*.iml
+
+# ============================================
+#  SYSTEME / DIVERS
+# ============================================
+
+# Archives
+*.tar
+*.tar.gz
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
