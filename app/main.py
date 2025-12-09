@@ -131,8 +131,8 @@ class TicketComment(db.Model):
     last_editor_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
     ticket = db.relationship("Ticket", backref="comments")
-    user = db.relationship("User", backref="comments")
-    last_editor = db.relationship("User", foreign_keys=[last_editor_id])
+    user = db.relationship("User", foreign_keys=[user_id], backref="comments")
+    last_editor = db.relationship("User", foreign_keys=[last_editor_id], backref="edited_comments")
 
     @property
     def is_edited(self):
