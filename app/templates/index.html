@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>GMAO - Clients</title>
+  <title>GMAO - Accueil</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -28,11 +28,78 @@
     </div>
   {% endif %}
 
-  <div class="card">
-    <div style="display:flex; justify-content: space-between; align-items:center; gap:12px;">
-      <h1>Clients</h1>
-      <a href="/clients/nouveau" class="btn">+ Ajouter un client</a>
+  <div class="grid-3">
+    <div class="card">
+      <h2>Tickets non traités &gt; 24h</h2>
+      <p style="font-size:32px; margin:4px 0;">{{ tickets_unhandled }}</p>
+      <p class="muted">Sans commentaire ni changement de statut sur les 24 dernières heures.</p>
     </div>
+
+    <div class="card">
+      <h2>Tickets par état</h2>
+      {% set max_state = state_counts.values()|max if state_counts else 0 %}
+      {% if state_counts %}
+        <div class="bar-list">
+          {% for state, count in state_counts.items() %}
+            <div class="bar-row">
+              <div class="bar-label">{{ state }}</div>
+              <div class="bar-track">
+                {% set width = 0 if max_state == 0 else (count / max_state * 100) %}
+                <div class="bar-fill" style="width: {{ '%.0f'|format(width) }}%;"></div>
+              </div>
+              <div class="bar-value">{{ count }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="muted">Pas de tickets.</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Tickets par assigné</h2>
+      {% set max_assigned = assigned_counts.values()|max if assigned_counts else 0 %}
+      {% if assigned_counts %}
+        <div class="bar-list">
+          {% for user_label, count in assigned_counts.items() %}
+            <div class="bar-row">
+              <div class="bar-label">{{ user_label }}</div>
+              <div class="bar-track">
+                {% set width = 0 if max_assigned == 0 else (count / max_assigned * 100) %}
+                <div class="bar-fill" style="width: {{ '%.0f'|format(width) }}%;"></div>
+              </div>
+              <div class="bar-value">{{ count }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="muted">Pas d'assignations.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex; justify-content: space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+      <h1>Clients</h1>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <a href="/clients/nouveau" class="btn">+ Ajouter un client</a>
+      </div>
+    </div>
+
+    <form method="get" class="form-row mt-1">
+      <div>
+        <label for="code">Code client</label>
+        <input type="text" id="code" name="code" placeholder="CLT-0001" value="{{ filters.code }}">
+      </div>
+      <div>
+        <label for="nom">Nom</label>
+        <input type="text" id="nom" name="nom" placeholder="Rechercher par nom" value="{{ filters.nom }}">
+      </div>
+      <div style="display:flex; align-items:flex-end; gap:8px;">
+        <button type="submit">Filtrer</button>
+        <a class="btn secondary" href="/">Réinitialiser</a>
+      </div>
+    </form>
 
     {% if clients %}
       <table class="mt-2">
@@ -45,7 +112,10 @@
           <tr>
             <td>CLT-{{ "%04d"|format(c.id) }}</td>
             <td>{{ c.nom }}</td>
-            <td><a href="/clients/{{ c.id }}/edit">Modifier</a></td>
+            <td style="display:flex; gap:8px;">
+              <a class="btn secondary" href="/clients/{{ c.id }}">Fiche</a>
+              <a class="btn secondary" href="/clients/{{ c.id }}/edit">Modifier</a>
+            </td>
           </tr>
         {% endfor %}
       </table>

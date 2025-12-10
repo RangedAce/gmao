@@ -149,6 +149,7 @@ class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     id_client = db.Column(db.Integer, db.ForeignKey("clients.id"), nullable=False)
+    assigned_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     category_id = db.Column(db.Integer, db.ForeignKey("materiel_categories.id"), nullable=True)
     materiel_type_id = db.Column(db.Integer, db.ForeignKey("materiel_types.id"), nullable=True)
 
@@ -164,6 +165,7 @@ class Ticket(db.Model):
     client = db.relationship("Client")
     category = db.relationship("MaterielCategory")
     materiel_type = db.relationship("MaterielType")
+    assigned_user = db.relationship("User", foreign_keys=[assigned_user_id])
 
     materiels = db.relationship(
         "Materiel",
@@ -246,6 +248,10 @@ def ensure_schema():
         conn.execute(db.text("""
         ALTER TABLE tickets
         ADD COLUMN IF NOT EXISTS materiel_type_id INTEGER REFERENCES materiel_types(id);
+        """))
+        conn.execute(db.text("""
+        ALTER TABLE tickets
+        ADD COLUMN IF NOT EXISTS assigned_user_id INTEGER REFERENCES users(id);
         """))
         conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_materiels_category ON materiels(category_id);"))
         conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_materiels_type ON materiels(type_id);"))
@@ -372,8 +378,51 @@ def logout():
 # ==========================
 @app.route("/")
 def index():
-    clients = Client.query.order_by(Client.id).all()
-    return render_template("index.html", clients=clients)
+    code_query = (request.args.get("code") or "").strip()
+    name_query = (request.args.get("nom") or "").strip()
+
+    client_query = Client.query
+    if code_query:
+        code_digits = code_query.replace("CLT-", "").strip()
+        try:
+            code_int = int(code_digits)
+            client_query = client_query.filter(Client.id == code_int)
+        except ValueError:
+            client_query = client_query.filter(Client.id == -1)
+    if name_query:
+        client_query = client_query.filter(Client.nom.ilike(f"%{name_query}%"))
+
+    clients = client_query.order_by(Client.id).all()
+
+    now = datetime.now()
+    threshold = now - timedelta(hours=24)
+    tickets_open = Ticket.query.filter(Ticket.etat != "cloture").all()
+    tickets_unhandled = 0
+    state_counts = {}
+    assigned_counts = {}
+
+    for t in tickets_open:
+        state_counts[t.etat] = state_counts.get(t.etat, 0) + 1
+
+        assigned_label = t.assigned_user.full_name if t.assigned_user else "Non assigne"
+        assigned_counts[assigned_label] = assigned_counts.get(assigned_label, 0) + 1
+
+        last_activity = t.date_ouverture
+        for c in t.comments:
+            activity_time = c.updated_at or c.created_at
+            if activity_time and activity_time > last_activity:
+                last_activity = activity_time
+        if last_activity < threshold:
+            tickets_unhandled += 1
+
+    return render_template(
+        "index.html",
+        clients=clients,
+        filters={"code": code_query, "nom": name_query},
+        tickets_unhandled=tickets_unhandled,
+        state_counts=state_counts,
+        assigned_counts=assigned_counts,
+    )
 
 
 @app.route("/clients/nouveau", methods=["GET", "POST"])
@@ -697,12 +746,14 @@ def nouveau_ticket():
     sites = Site.query.order_by(Site.nom).all()
     categories = MaterielCategory.query.order_by(MaterielCategory.name).all()
     types = MaterielType.query.order_by(MaterielType.name).all()
+    users = User.query.order_by(User.full_name).all()
 
     if request.method == "POST":
         t = Ticket(
             id_client=request.form.get("id_client"),
             category_id=request.form.get("category_id") or None,
             materiel_type_id=request.form.get("materiel_type_id") or None,
+            assigned_user_id=request.form.get("assigned_user_id") or None,
             type=request.form.get("type"),
             priorite=request.form.get("priorite"),
             titre=request.form.get("titre"),
@@ -734,6 +785,7 @@ def nouveau_ticket():
         sites=sites,
         categories=categories,
         types=types,
+        users=users,
     )
 
 
@@ -896,6 +948,7 @@ def ticket_edit(id):
     sites = Site.query.order_by(Site.nom).all()
     categories = MaterielCategory.query.order_by(MaterielCategory.name).all()
     types = MaterielType.query.order_by(MaterielType.name).all()
+    users = User.query.order_by(User.full_name).all()
 
     if request.method == "POST":
         ticket.id_client = request.form.get("id_client")
@@ -905,6 +958,7 @@ def ticket_edit(id):
         ticket.description = request.form.get("description")
         ticket.category_id = request.form.get("category_id") or None
         ticket.materiel_type_id = request.form.get("materiel_type_id") or None
+        ticket.assigned_user_id = request.form.get("assigned_user_id") or None
 
         ticket.materiels.clear()
         materiels_ids = request.form.getlist("materiels_ids")
@@ -936,6 +990,7 @@ def ticket_edit(id):
         selected_site_ids=selected_site_ids,
         categories=categories,
         types=types,
+        users=users,
     )
 
 
