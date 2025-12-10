@@ -45,29 +45,148 @@
       </div>
     </form>
 
+    <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; margin-bottom:10px;">
+      <div class="card" style="flex:1; min-width:280px; padding:12px;">
+        <h3 style="margin-top:0;">Colonnes affichées</h3>
+        <div class="form-actions" style="margin-bottom:8px;">
+          <button type="button" class="btn" id="col-up">Monter</button>
+          <button type="button" class="btn" id="col-down">Descendre</button>
+        </div>
+        <select id="col-select" multiple size="8" style="width:100%; min-height:180px;">
+          <option value="code">Code</option>
+          <option value="nom">Nom</option>
+          <option value="contrat">Contrat</option>
+          <option value="solde">Solde</option>
+          <option value="sites">Sites</option>
+          <option value="materiels">Matériels</option>
+          <option value="tickets">Tickets</option>
+          <option value="actions">Actions</option>
+        </select>
+      </div>
+    </div>
+
     {% if clients %}
-      <table class="mt-2">
-        <tr>
-          <th>Code</th>
-          <th>Nom</th>
-          <th>Actions</th>
-        </tr>
+      <table id="clients-table" class="mt-2">
+        <thead>
+          <tr id="clients-head"></tr>
+        </thead>
+        <tbody id="clients-body">
         {% for c in clients %}
           <tr>
-            <td>CLT-{{ "%04d"|format(c.id) }}</td>
-            <td>{{ c.nom }}</td>
-            <td style="display:flex; gap:8px;">
+            <td data-col="code">CLT-{{ "%04d"|format(c.id) }}</td>
+            <td data-col="nom">{{ c.nom }}</td>
+            <td data-col="contrat">
+              {% if c.contract_type == "credit_time" %}Crédit temps
+              {% elif c.contract_type == "credit_point" %}Crédit points
+              {% else %}Pas de contrat{% endif %}
+            </td>
+            <td data-col="solde">{{ c.contract_balance if c.contract_balance is not none else "-" }}</td>
+            <td data-col="sites">{{ c.sites|length }}</td>
+            <td data-col="materiels">{{ materiel_counts.get(c.id, 0) }}</td>
+            <td data-col="tickets">{{ ticket_counts.get(c.id, 0) }}</td>
+            <td data-col="actions" style="display:flex; gap:8px;">
               <a class="btn secondary" href="/clients/{{ c.id }}">Fiche</a>
               <a class="btn secondary" href="/clients/{{ c.id }}/edit">Modifier</a>
             </td>
           </tr>
         {% endfor %}
+        </tbody>
       </table>
     {% else %}
       <p class="muted mt-2">Aucun client pour l'instant.</p>
     {% endif %}
   </div>
 </main>
+
+<script>
+  const clientCols = {
+    code: "Code",
+    nom: "Nom",
+    contrat: "Contrat",
+    solde: "Solde",
+    sites: "Sites",
+    materiels: "Matériels",
+    tickets: "Tickets",
+    actions: "Actions",
+  };
+  const clientDefault = ["code","nom","contrat","solde","sites","materiels","tickets","actions"];
+  const clientStorageKey = "clients_columns_order_v1";
+
+  function loadClientOrder() {
+    const stored = localStorage.getItem(clientStorageKey);
+    if (!stored) return [...clientDefault];
+    try {
+      const arr = JSON.parse(stored);
+      return Array.isArray(arr) && arr.length ? arr.filter(c => clientCols[c]) : [...clientDefault];
+    } catch(_) { return [...clientDefault]; }
+  }
+  function saveClientOrder(order) { localStorage.setItem(clientStorageKey, JSON.stringify(order)); }
+
+  function applyClientOrder(order) {
+    const head = document.getElementById("clients-head");
+    const rows = document.querySelectorAll("#clients-body tr");
+    head.innerHTML = "";
+    order.forEach(col => {
+      const th = document.createElement("th");
+      th.textContent = clientCols[col] || col;
+      head.appendChild(th);
+    });
+    rows.forEach(row => {
+      const cells = {};
+      row.querySelectorAll("td").forEach(td => { cells[td.dataset.col] = td; });
+      row.innerHTML = "";
+      order.forEach(col => { if (cells[col]) row.appendChild(cells[col]); });
+    });
+  }
+
+  function syncClientSelect(order) {
+    const select = document.getElementById("col-select");
+    select.innerHTML = "";
+    Object.entries(clientCols).forEach(([key,label]) => {
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = label;
+      select.appendChild(opt);
+    });
+    order.forEach(c => {
+      const opt = select.querySelector(`option[value="${c}"]`);
+      if (opt) opt.selected = true;
+    });
+  }
+
+  function moveClient(direction) {
+    const select = document.getElementById("col-select");
+    const selected = Array.from(select.selectedOptions).map(o => o.value);
+    let current = loadClientOrder();
+    selected.forEach(col => {
+      const idx = current.indexOf(col);
+      if (idx === -1) return;
+      const swapWith = direction === "up" ? idx - 1 : idx + 1;
+      if (swapWith < 0 || swapWith >= current.length) return;
+      [current[idx], current[swapWith]] = [current[swapWith], current[idx]];
+    });
+    saveClientOrder(current);
+    syncClientSelect(current);
+    applyClientOrder(current);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const order = loadClientOrder();
+    syncClientSelect(order);
+    applyClientOrder(order);
+
+    document.getElementById("col-up").addEventListener("click", () => moveClient("up"));
+    document.getElementById("col-down").addEventListener("click", () => moveClient("down"));
+    document.getElementById("col-select").addEventListener("change", () => {
+      let current = loadClientOrder();
+      const selected = Array.from(document.getElementById("col-select").selectedOptions).map(o => o.value);
+      current = current.filter(c => selected.includes(c));
+      Object.keys(clientCols).forEach(col => { if (selected.includes(col) && !current.includes(col)) current.push(col); });
+      saveClientOrder(current);
+      applyClientOrder(current);
+    });
+  });
+</script>
 
 </body>
 </html>

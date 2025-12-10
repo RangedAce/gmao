@@ -8,7 +8,7 @@ from flask import (
 import difflib
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import or_, inspect
+from sqlalchemy import or_, inspect, func
 
 # ==========================
 #  CONFIG
@@ -486,7 +486,19 @@ def liste_clients():
         client_query = client_query.filter(Client.nom.ilike(f"%{name_query}%"))
 
     clients = client_query.order_by(Client.id).all()
-    return render_template("clients.html", clients=clients, filters={"code": code_query, "nom": name_query})
+    ticket_counts = {
+        cid: cnt for cid, cnt in db.session.query(Ticket.id_client, func.count(Ticket.id)).group_by(Ticket.id_client).all()
+    }
+    materiel_counts = {
+        cid: cnt for cid, cnt in db.session.query(Materiel.id_client, func.count(Materiel.id)).group_by(Materiel.id_client).all()
+    }
+    return render_template(
+        "clients.html",
+        clients=clients,
+        filters={"code": code_query, "nom": name_query},
+        ticket_counts=ticket_counts,
+        materiel_counts=materiel_counts,
+    )
 
 
 @app.route("/clients/nouveau", methods=["GET", "POST"])

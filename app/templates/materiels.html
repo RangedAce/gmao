@@ -33,36 +33,143 @@
       </div>
     </div>
 
-    <table class="mt-2">
-      <tr>
-        <th>ID</th>
-        <th>Client</th>
-        <th>Categorie</th>
-        <th>Type</th>
-        <th>Modele</th>
-        <th>No Serie</th>
-        <th>Statut</th>
-        <th></th>
-      </tr>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; margin-bottom:10px;">
+      <div class="card" style="flex:1; min-width:280px; padding:12px;">
+        <h3 style="margin-top:0;">Colonnes affichées</h3>
+        <div class="form-actions" style="margin-bottom:8px;">
+          <button type="button" class="btn" id="col-up">Monter</button>
+          <button type="button" class="btn" id="col-down">Descendre</button>
+        </div>
+        <select id="col-select" multiple size="8" style="width:100%; min-height:180px;">
+          <option value="id">ID</option>
+          <option value="client">Client</option>
+          <option value="categorie">Categorie</option>
+          <option value="type">Type</option>
+          <option value="modele">Modele</option>
+          <option value="serie">No Serie</option>
+          <option value="statut">Statut</option>
+          <option value="date_installation">Date installation</option>
+          <option value="garantie">Fin garantie</option>
+          <option value="actions">Actions</option>
+        </select>
+      </div>
+    </div>
 
+    <table id="materiels-table" class="mt-2">
+      <thead>
+        <tr id="materiels-head"></tr>
+      </thead>
+      <tbody id="materiels-body">
       {% for m in materiels %}
-      <tr>
-        <td><a href="/materiels/{{ m.id }}">{{ m.id }}</a></td>
-        <td>{{ m.client.nom }}</td>
-        <td>{{ m.category.name if m.category else "N/A" }}</td>
-        <td>{{ m.materiel_type.name if m.materiel_type else m.type }}</td>
-        <td>{{ m.modele }}</td>
-        <td>{{ m.numero_serie }}</td>
-        <td>{{ m.statut }}</td>
-        <td><a href="/materiels/{{ m.id }}/edit">Modifier</a></td>
-      </tr>
+        <tr>
+          <td data-col="id"><a href="/materiels/{{ m.id }}">{{ m.id }}</a></td>
+          <td data-col="client">{{ m.client.nom }}</td>
+          <td data-col="categorie">{{ m.category.name if m.category else "N/A" }}</td>
+          <td data-col="type">{{ m.materiel_type.name if m.materiel_type else m.type }}</td>
+          <td data-col="modele">{{ m.modele }}</td>
+          <td data-col="serie">{{ m.numero_serie }}</td>
+          <td data-col="statut">{{ m.statut }}</td>
+          <td data-col="date_installation">{{ m.date_installation or "-" }}</td>
+          <td data-col="garantie">{{ m.garantie_fin or "-" }}</td>
+          <td data-col="actions"><a class="btn secondary" href="/materiels/{{ m.id }}/edit">Modifier</a></td>
+        </tr>
       {% endfor %}
+      </tbody>
     </table>
   </div>
 
   <p class="muted"><a href="/">Retour</a></p>
 </main>
 
+<script>
+  const matCols = {
+    id: "ID",
+    client: "Client",
+    categorie: "Categorie",
+    type: "Type",
+    modele: "Modele",
+    serie: "No Serie",
+    statut: "Statut",
+    date_installation: "Date installation",
+    garantie: "Fin garantie",
+    actions: "Actions",
+  };
+  const matDefault = ["id","client","categorie","type","modele","serie","statut","date_installation","garantie","actions"];
+  const matKey = "materiels_columns_order_v1";
+
+  function loadMatOrder() {
+    const stored = localStorage.getItem(matKey);
+    if (!stored) return [...matDefault];
+    try {
+      const arr = JSON.parse(stored);
+      return Array.isArray(arr) && arr.length ? arr.filter(c => matCols[c]) : [...matDefault];
+    } catch(_) { return [...matDefault]; }
+  }
+  function saveMatOrder(order){ localStorage.setItem(matKey, JSON.stringify(order)); }
+
+  function applyMatOrder(order){
+    const head = document.getElementById("materiels-head");
+    const rows = document.querySelectorAll("#materiels-body tr");
+    head.innerHTML = "";
+    order.forEach(col => {
+      const th = document.createElement("th");
+      th.textContent = matCols[col] || col;
+      head.appendChild(th);
+    });
+    rows.forEach(row => {
+      const cells = {};
+      row.querySelectorAll("td").forEach(td => cells[td.dataset.col] = td);
+      row.innerHTML = "";
+      order.forEach(col => { if (cells[col]) row.appendChild(cells[col]); });
+    });
+  }
+
+  function syncMatSelect(order){
+    const select = document.getElementById("col-select");
+    select.innerHTML = "";
+    Object.entries(matCols).forEach(([k,v]) => {
+      const opt = document.createElement("option");
+      opt.value = k; opt.textContent = v; select.appendChild(opt);
+    });
+    order.forEach(col => {
+      const opt = select.querySelector(`option[value="${col}"]`);
+      if (opt) opt.selected = true;
+    });
+  }
+
+  function moveMat(dir){
+    const select = document.getElementById("col-select");
+    const selected = Array.from(select.selectedOptions).map(o => o.value);
+    let current = loadMatOrder();
+    selected.forEach(col => {
+      const idx = current.indexOf(col);
+      if (idx === -1) return;
+      const swap = dir === "up" ? idx-1 : idx+1;
+      if (swap < 0 || swap >= current.length) return;
+      [current[idx], current[swap]] = [current[swap], current[idx]];
+    });
+    saveMatOrder(current);
+    syncMatSelect(current);
+    applyMatOrder(current);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const order = loadMatOrder();
+    syncMatSelect(order);
+    applyMatOrder(order);
+
+    document.getElementById("col-up").addEventListener("click", () => moveMat("up"));
+    document.getElementById("col-down").addEventListener("click", () => moveMat("down"));
+    document.getElementById("col-select").addEventListener("change", () => {
+      let current = loadMatOrder();
+      const selected = Array.from(document.getElementById("col-select").selectedOptions).map(o => o.value);
+      current = current.filter(c => selected.includes(c));
+      Object.keys(matCols).forEach(col => { if (selected.includes(col) && !current.includes(col)) current.push(col); });
+      saveMatOrder(current);
+      applyMatOrder(current);
+    });
+  });
+</script>
+
 </body>
 </html>
-
