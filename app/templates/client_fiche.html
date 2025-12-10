@@ -46,6 +46,38 @@
 
 <p><a class="button-link" href="#interventions">Historique des interventions</a></p>
 
+<h2>Contrats de maintenance</h2>
+{% if maintenance_contracts %}
+  <table>
+    <tr>
+      <th>No contrat</th>
+      <th>Duree contrat</th>
+      <th>Type contrat</th>
+      <th>Date effet</th>
+      <th>Date renouvellement</th>
+      <th>Conditions</th>
+      <th>Prix total</th>
+      <th>Resilie</th>
+      <th>Reconductible</th>
+    </tr>
+    {% for c in maintenance_contracts %}
+      <tr>
+        <td>{{ c.numero }}</td>
+        <td>{{ c.duree or "-" }}</td>
+        <td>{{ c.type_contrat or "-" }}</td>
+        <td>{{ c.date_effet.strftime("%d/%m/%Y") if c.date_effet else "-" }}</td>
+        <td>{{ c.date_renouvellement.strftime("%d/%m/%Y") if c.date_renouvellement else "-" }}</td>
+        <td>{{ c.conditions or "-" }}</td>
+        <td>{{ "%.2f"|format(c.prix_total) if c.prix_total is not none else "-" }}</td>
+        <td>{{ "Oui" if c.resilie else "Non" }}</td>
+        <td>{{ "Oui" if c.reconductible else "Non" }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  <p>Aucun contrat de maintenance enregistre.</p>
+{% endif %}
+
 <h2>Sites / agences</h2>
 
 {% if client.sites %}

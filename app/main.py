@@ -48,6 +48,24 @@ class ContractLog(db.Model):
 
     client = db.relationship("Client", backref="contract_logs")
 
+
+class MaintenanceContract(db.Model):
+    __tablename__ = "maintenance_contracts"
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey("clients.id"), nullable=False)
+    numero = db.Column(db.String(128), nullable=False)
+    duree = db.Column(db.String(64), nullable=True)
+    type_contrat = db.Column(db.String(128), nullable=True)
+    date_effet = db.Column(db.Date, nullable=True)
+    date_renouvellement = db.Column(db.Date, nullable=True)
+    conditions = db.Column(db.Text, nullable=True)
+    prix_total = db.Column(db.Float, nullable=True)
+    resilie = db.Column(db.Boolean, nullable=False, default=False)
+    reconductible = db.Column(db.Boolean, nullable=False, default=False)
+
+    client = db.relationship("Client", backref="maintenance_contracts")
+
+
 class Site(db.Model):
     __tablename__ = "sites"
     id = db.Column(db.Integer, primary_key=True)
@@ -254,6 +272,22 @@ def ensure_schema():
         """))
         conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_contract_logs_client ON contract_logs(client_id);"))
         conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_contract_logs_ticket ON contract_logs(ticket_id);"))
+        conn.execute(db.text("""
+        CREATE TABLE IF NOT EXISTS maintenance_contracts (
+            id SERIAL PRIMARY KEY,
+            client_id INTEGER NOT NULL REFERENCES clients(id),
+            numero VARCHAR(128) NOT NULL,
+            duree VARCHAR(64),
+            type_contrat VARCHAR(128),
+            date_effet DATE,
+            date_renouvellement DATE,
+            conditions TEXT,
+            prix_total FLOAT,
+            resilie BOOLEAN NOT NULL DEFAULT FALSE,
+            reconductible BOOLEAN NOT NULL DEFAULT FALSE
+        );
+        """))
+        conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_maintenance_contracts_client ON maintenance_contracts(client_id);"))
 
 
 with app.app_context():
@@ -380,7 +414,17 @@ def client_fiche(id):
     tickets = Ticket.query.filter_by(id_client=id).order_by(Ticket.id.desc()).all()
     materiels = Materiel.query.filter_by(id_client=id).order_by(Materiel.id).all()
     logs = ContractLog.query.filter_by(client_id=id).order_by(ContractLog.created_at.desc()).all()
-    return render_template("client_fiche.html", client=client, tickets=tickets, materiels=materiels, contract_logs=logs)
+    maintenance_contracts = MaintenanceContract.query.filter_by(client_id=id).order_by(
+        MaintenanceContract.date_effet.desc(), MaintenanceContract.id.desc()
+    ).all()
+    return render_template(
+        "client_fiche.html",
+        client=client,
+        tickets=tickets,
+        materiels=materiels,
+        contract_logs=logs,
+        maintenance_contracts=maintenance_contracts,
+    )
 
 @app.route("/clients/<int:client_id>/sites/nouveau", methods=["GET", "POST"])
 def nouveau_site(client_id):
