@@ -51,7 +51,15 @@
 <p><a href="/tickets/{{ t.id }}/edit">Modifier le ticket</a></p>
 <p><span>Type :</span> {{ t.type }}</p>
 <p><span>Priorité :</span> {{ t.priorite }}</p>
-<p><span>Assigné à :</span> {{ t.assigned_user.full_name if t.assigned_user else "Non assigné" }}</p>
+<p><span>Assigné à :</span>
+  {% if t.assigned_group %}
+    Groupe {{ t.assigned_group.name }}
+  {% elif t.assigned_user %}
+    {{ t.assigned_user.full_name }}
+  {% else %}
+    Non assigné
+  {% endif %}
+</p>
 <p><span>Catégorie matérielle :</span> {{ t.category.name if t.category else "Non définie" }}</p>
 <p><span>Type matériel :</span> {{ t.materiel_type.name if t.materiel_type else "Non défini" }}</p>
 <p><span>État :</span> {{ t.etat }}</p>

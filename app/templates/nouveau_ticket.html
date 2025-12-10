@@ -188,6 +188,13 @@
       <option value="{{ u.id }}">{{ u.full_name }} ({{ u.role }})</option>
     {% endfor %}
   </select>
+  <label for="assigned_group_id">ou Groupe</label>
+  <select name="assigned_group_id" id="assigned_group_id">
+    <option value="">Aucun</option>
+    {% for g in groups %}
+      <option value="{{ g.id }}">{{ g.name }}</option>
+    {% endfor %}
+  </select>
 
   <label for="titre">Titre</label>
   <input type="text" name="titre" id="titre" required>
@@ -205,4 +212,3 @@
 
 </body>
 </html>
-

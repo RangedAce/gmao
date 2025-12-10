@@ -74,6 +74,13 @@
       <option value="{{ u.id }}" {% if t.assigned_user_id and t.assigned_user_id == u.id %}selected{% endif %}>{{ u.full_name }} ({{ u.role }})</option>
     {% endfor %}
   </select>
+  <label for="assigned_group_id">ou Groupe</label>
+  <select name="assigned_group_id" id="assigned_group_id">
+    <option value="">Aucun</option>
+    {% for g in groups %}
+      <option value="{{ g.id }}" {% if t.assigned_group_id and t.assigned_group_id == g.id %}selected{% endif %}>{{ g.name }}</option>
+    {% endfor %}
+  </select>
 
   <label for="titre">Titre</label>
   <input type="text" name="titre" id="titre" value="{{ t.titre }}" required>

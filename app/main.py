@@ -168,6 +168,7 @@ class Ticket(db.Model):
 
     id_client = db.Column(db.Integer, db.ForeignKey("clients.id"), nullable=False)
     assigned_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    assigned_group_id = db.Column(db.Integer, db.ForeignKey("user_groups.id"), nullable=True)
     category_id = db.Column(db.Integer, db.ForeignKey("materiel_categories.id"), nullable=True)
     materiel_type_id = db.Column(db.Integer, db.ForeignKey("materiel_types.id"), nullable=True)
 
@@ -184,6 +185,7 @@ class Ticket(db.Model):
     category = db.relationship("MaterielCategory")
     materiel_type = db.relationship("MaterielType")
     assigned_user = db.relationship("User", foreign_keys=[assigned_user_id])
+    assigned_group = db.relationship("UserGroup", foreign_keys=[assigned_group_id])
 
     materiels = db.relationship(
         "Materiel",
@@ -341,6 +343,7 @@ def ensure_schema():
                 ("category_id", "INTEGER REFERENCES materiel_categories(id)"),
                 ("materiel_type_id", "INTEGER REFERENCES materiel_types(id)"),
                 ("assigned_user_id", "INTEGER REFERENCES users(id)"),
+                ("assigned_group_id", "INTEGER REFERENCES user_groups(id)"),
             ],
             "clients": [
                 ("contract_type", "VARCHAR(32) NOT NULL DEFAULT 'none'"),
@@ -808,13 +811,19 @@ def nouveau_ticket():
     categories = MaterielCategory.query.order_by(MaterielCategory.name).all()
     types = MaterielType.query.order_by(MaterielType.name).all()
     users = User.query.order_by(User.full_name).all()
+    groups = UserGroup.query.order_by(UserGroup.name).all()
 
     if request.method == "POST":
+        group_id = request.form.get("assigned_group_id") or None
+        user_id = request.form.get("assigned_user_id") or None
+        if group_id:
+            user_id = None
         t = Ticket(
             id_client=request.form.get("id_client"),
             category_id=request.form.get("category_id") or None,
             materiel_type_id=request.form.get("materiel_type_id") or None,
-            assigned_user_id=request.form.get("assigned_user_id") or None,
+            assigned_user_id=user_id,
+            assigned_group_id=group_id,
             type=request.form.get("type"),
             priorite=request.form.get("priorite"),
             titre=request.form.get("titre"),
@@ -847,6 +856,7 @@ def nouveau_ticket():
         categories=categories,
         types=types,
         users=users,
+        groups=groups,
     )
 
 
@@ -1010,6 +1020,7 @@ def ticket_edit(id):
     categories = MaterielCategory.query.order_by(MaterielCategory.name).all()
     types = MaterielType.query.order_by(MaterielType.name).all()
     users = User.query.order_by(User.full_name).all()
+    groups = UserGroup.query.order_by(UserGroup.name).all()
 
     if request.method == "POST":
         ticket.id_client = request.form.get("id_client")
@@ -1019,7 +1030,12 @@ def ticket_edit(id):
         ticket.description = request.form.get("description")
         ticket.category_id = request.form.get("category_id") or None
         ticket.materiel_type_id = request.form.get("materiel_type_id") or None
-        ticket.assigned_user_id = request.form.get("assigned_user_id") or None
+        group_id = request.form.get("assigned_group_id") or None
+        user_id = request.form.get("assigned_user_id") or None
+        if group_id:
+            user_id = None
+        ticket.assigned_user_id = user_id
+        ticket.assigned_group_id = group_id
 
         ticket.materiels.clear()
         materiels_ids = request.form.getlist("materiels_ids")
@@ -1052,6 +1068,7 @@ def ticket_edit(id):
         categories=categories,
         types=types,
         users=users,
+        groups=groups,
     )
 
 
