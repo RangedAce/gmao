@@ -82,7 +82,7 @@
             <td>{{ g.name }}</td>
             <td>
               {% if g.users %}
-                {{ ", ".join([u.full_name for u in g.users]) }}
+                {{ g.users | map(attribute="full_name") | join(", ") }}
               {% else %}
                 Aucun membre
               {% endif %}
@@ -98,4 +98,3 @@
 
 </body>
 </html>
-
