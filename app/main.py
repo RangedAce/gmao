@@ -219,9 +219,8 @@ def _require_admin():
 def ensure_schema():
     """Crée les tables/colonnes manquantes au démarrage (fallback sans migrations Alembic)."""
     engine = db.engine
-    inspector = inspect(engine)
-
-    with engine.connect() as conn:
+    with engine.begin() as conn:
+        inspector = inspect(conn)
         conn.execute(db.text("""
         CREATE TABLE IF NOT EXISTS materiel_categories (
             id SERIAL PRIMARY KEY,
@@ -293,18 +292,33 @@ def ensure_schema():
             conditions TEXT,
             prix_total FLOAT,
             resilie BOOLEAN NOT NULL DEFAULT FALSE,
-        reconductible BOOLEAN NOT NULL DEFAULT FALSE
+            reconductible BOOLEAN NOT NULL DEFAULT FALSE
         );
         """))
         conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_maintenance_contracts_client ON maintenance_contracts(client_id);"))
 
-        # Fallback si la colonne assigned_user_id manque encore (ancienne base existante)
-        ticket_columns = {col["name"] for col in inspector.get_columns("tickets")}
-        if "assigned_user_id" not in ticket_columns:
-            conn.execute(db.text("""
-            ALTER TABLE tickets
-            ADD COLUMN assigned_user_id INTEGER REFERENCES users(id);
-            """))
+        # Fallback évolutif pour les colonnes ajoutées après coup
+        columns_to_add = {
+            "materiels": [
+                ("category_id", "INTEGER REFERENCES materiel_categories(id)"),
+                ("type_id", "INTEGER REFERENCES materiel_types(id)"),
+            ],
+            "tickets": [
+                ("category_id", "INTEGER REFERENCES materiel_categories(id)"),
+                ("materiel_type_id", "INTEGER REFERENCES materiel_types(id)"),
+                ("assigned_user_id", "INTEGER REFERENCES users(id)"),
+            ],
+            "clients": [
+                ("contract_type", "VARCHAR(32) NOT NULL DEFAULT 'none'"),
+                ("contract_balance", "FLOAT"),
+            ],
+        }
+
+        for table_name, cols in columns_to_add.items():
+            existing = {col["name"] for col in inspector.get_columns(table_name)}
+            for col_name, ddl in cols:
+                if col_name not in existing:
+                    conn.execute(db.text(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {ddl};"))
 
 
 with app.app_context():
