@@ -3,15 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Modifier le ticket #{{ t.id }}</title>
-  <style>
-    body { font-family: sans-serif; margin: 20px; }
-    nav a { margin-right: 10px; }
-    form { max-width: 700px; }
-    label { display: block; margin-top: 10px; }
-    input, select, textarea { width: 100%; padding: 6px; margin-top: 4px; }
-    button { margin-top: 15px; padding: 8px 12px; }
-    .hint { color:#555; font-size: 0.9em; }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
@@ -19,7 +11,7 @@
   <a href="/">Clients</a>
   <a href="/materiels">Matériels</a>
   <a href="/tickets">Tickets</a>
-  <span style="float:right;">
+  <span class="right">
     {% if current_user %}
       Connecté : {{ current_user.full_name }} ({{ current_user.role }})
       &rarr; <a href="/logout">Déconnexion</a>
@@ -28,6 +20,8 @@
 </nav>
 <hr>
 
+<main>
+<div class="card">
 <h1>Modifier le ticket #{{ t.id }}</h1>
 
 <form method="post">
@@ -196,6 +190,9 @@
 </form>
 
 <p><a href="/tickets/{{ t.id }}">&larr; Retour au ticket</a></p>
+
+</div>
+</main>
 
 </body>
 </html>

@@ -3,52 +3,49 @@
 <head>
   <meta charset="utf-8">
   <title>Utilisateurs</title>
-  <style>
-    body { font-family: sans-serif; margin: 20px; }
-    nav a { margin-right: 10px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 6px; }
-    th { background: #eee; }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
 <nav>
   <a href="/">Clients</a>
-  <a href="/materiels">Matériels</a>
+  <a href="/materiels">Materiels</a>
   <a href="/tickets">Tickets</a>
   <a href="/users">Utilisateurs</a>
-  <span style="float:right;">
+  <span class="right">
     {% if current_user %}
-      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
-      - <a href="/logout">Déconnexion</a>
+      Connecte : {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
     {% endif %}
   </span>
 </nav>
-<hr>
 
-<h1>Utilisateurs</h1>
+<main>
+  <div class="card">
+    <div style="display:flex; justify-content: space-between; align-items:center; gap:12px;">
+      <h1>Utilisateurs</h1>
+      <a class="btn" href="/users/nouveau">+ Creer un utilisateur</a>
+    </div>
 
-<p><a href="/users/nouveau">Créer un utilisateur</a></p>
+    <table class="mt-2">
+      <tr>
+        <th>ID</th>
+        <th>Nom</th>
+        <th>Login</th>
+        <th>Role</th>
+      </tr>
+      {% for u in users %}
+        <tr>
+          <td>{{ u.id }}</td>
+          <td>{{ u.full_name }}</td>
+          <td>{{ u.login }}</td>
+          <td>{{ u.role }}</td>
+        </tr>
+      {% endfor %}
+    </table>
 
-<table>
-  <tr>
-    <th>ID</th>
-    <th>Nom</th>
-    <th>Login</th>
-    <th>Rôle</th>
-  </tr>
-  {% for u in users %}
-    <tr>
-      <td>{{ u.id }}</td>
-      <td>{{ u.full_name }}</td>
-      <td>{{ u.login }}</td>
-      <td>{{ u.role }}</td>
-    </tr>
-  {% endfor %}
-</table>
-
-<p><a href="/">← Retour</a></p>
+    <p class="muted mt-2"><a href="/">Retour</a></p>
+  </div>
+</main>
 
 </body>
 </html>

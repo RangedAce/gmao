@@ -2,62 +2,61 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Liste des matériels</title>
-  <style>
-    body { font-family: sans-serif; margin: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; }
-    th { background: #eee; }
-  </style>
-<nav>
-  <a href="/">Clients</a>
-  <a href="/materiels">Matériels</a>
-  <a href="/tickets">Tickets</a>
-
-  <span style="float:right;">
-    {% if current_user %}
-      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
-      - <a href="/logout">Déconnexion</a>
-    {% endif %}
-  </span>
-</nav>
-<hr>
-
+  <title>Liste des materiels</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<h1>Matériels</h1>
+<nav>
+  <a href="/">Clients</a>
+  <a href="/materiels">Materiels</a>
+  <a href="/tickets">Tickets</a>
+  <span class="right">
+    {% if current_user %}
+      Connecte : {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
+    {% endif %}
+  </span>
+</nav>
 
-<a href="/materiels/nouveau">→ Ajouter un matériel</a> | <a href="/materiels/categories">Catégories / Types</a>
+<main>
+  <div class="card">
+    <div style="display:flex; justify-content: space-between; align-items:center; gap:12px;">
+      <h1>Materiels</h1>
+      <div style="display:flex; gap:8px;">
+        <a class="btn secondary" href="/materiels/categories">Categories / Types</a>
+        <a class="btn" href="/materiels/nouveau">+ Ajouter</a>
+      </div>
+    </div>
 
-<table>
-<tr>
-  <th>ID</th>
-  <th>Client</th>
-  <th>Catégorie</th>
-  <th>Type</th>
-  <th>Modèle</th>
-  <th>N° Série</th>
-  <th>Statut</th>
-  <th></th>
-</tr>
+    <table class="mt-2">
+      <tr>
+        <th>ID</th>
+        <th>Client</th>
+        <th>Categorie</th>
+        <th>Type</th>
+        <th>Modele</th>
+        <th>No Serie</th>
+        <th>Statut</th>
+        <th></th>
+      </tr>
 
-{% for m in materiels %}
-<tr>
-  <td><a href="/materiels/{{ m.id }}">{{ m.id }}</a></td>
-  <td>{{ m.client.nom }}</td>
-  <td>{{ m.category.name if m.category else "N/A" }}</td>
-  <td>{{ m.materiel_type.name if m.materiel_type else m.type }}</td>
-  <td>{{ m.modele }}</td>
-  <td>{{ m.numero_serie }}</td>
-  <td>{{ m.statut }}</td>
-  <td><a href="/materiels/{{ m.id }}/edit">Modifier</a></td>
-</tr>
-{% endfor %}
+      {% for m in materiels %}
+      <tr>
+        <td><a href="/materiels/{{ m.id }}">{{ m.id }}</a></td>
+        <td>{{ m.client.nom }}</td>
+        <td>{{ m.category.name if m.category else "N/A" }}</td>
+        <td>{{ m.materiel_type.name if m.materiel_type else m.type }}</td>
+        <td>{{ m.modele }}</td>
+        <td>{{ m.numero_serie }}</td>
+        <td>{{ m.statut }}</td>
+        <td><a href="/materiels/{{ m.id }}/edit">Modifier</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
 
-</table>
-
-<p><a href="/">← Retour</a></p>
+  <p class="muted"><a href="/">Retour</a></p>
+</main>
 
 </body>
 </html>

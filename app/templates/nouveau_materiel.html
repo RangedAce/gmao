@@ -2,66 +2,90 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Nouveau matériel</title>
-  <style>
-    body { font-family: sans-serif; margin: 20px; }
-    label { display: block; margin-top: 10px; }
-    input, select { width: 100%; padding: 6px; margin-top: 4px; }
-    button { margin-top: 15px; padding: 8px 12px; }
-  </style>
+  <title>Nouveau materiel</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<h1>Ajouter un matériel</h1>
+<nav>
+  <a href="/">Clients</a>
+  <a href="/materiels">Materiels</a>
+  <a href="/tickets">Tickets</a>
+  <span class="right">
+    {% if current_user %}
+      Connecte : {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
+    {% endif %}
+  </span>
+</nav>
 
-<form method="post">
+<main>
+  <div class="card">
+    <h1>Ajouter un materiel</h1>
 
-  <label for="id_client">Client</label>
-  <select name="id_client" id="id_client" required>
-    {% for c in clients %}
-      <option value="{{ c.id }}">{{ c.nom }}</option>
-    {% endfor %}
-  </select>
+    <form method="post">
+      <label for="id_client">Client</label>
+      <select name="id_client" id="id_client" required>
+        {% for c in clients %}
+          <option value="{{ c.id }}">{{ c.nom }}</option>
+        {% endfor %}
+      </select>
 
-  <label for="category_id">Catégorie</label>
-  <select name="category_id" id="category_id" required>
-    <option value="">-- Choisir --</option>
-    {% for cat in categories %}
-      <option value="{{ cat.id }}">{{ cat.name }}</option>
-    {% endfor %}
-  </select>
+      <div class="form-row">
+        <div>
+          <label for="category_id">Categorie</label>
+          <select name="category_id" id="category_id" required>
+            <option value="">-- Choisir --</option>
+            {% for cat in categories %}
+              <option value="{{ cat.id }}">{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="type_id">Type</label>
+          <select name="type_id" id="type_id" required disabled>
+            <option value="">-- Choisir --</option>
+            {% for t in types %}
+              <option value="{{ t.id }}" data-cat="{{ t.category_id }}">{{ t.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
 
-  <label for="type_id">Type</label>
-  <select name="type_id" id="type_id" required disabled>
-    <option value="">-- Choisir --</option>
-    {% for t in types %}
-      <option value="{{ t.id }}" data-cat="{{ t.category_id }}">{{ t.name }}</option>
-    {% endfor %}
-  </select>
+      <div class="form-row">
+        <div>
+          <label>Modele</label>
+          <input type="text" name="modele" required>
+        </div>
+        <div>
+          <label>Numero de serie</label>
+          <input type="text" name="numero_serie" required>
+        </div>
+      </div>
 
-  <label>Modèle</label>
-  <input type="text" name="modele" required>
+      <div class="form-row">
+        <div>
+          <label>Date d'installation</label>
+          <input type="date" name="date_installation">
+        </div>
+        <div>
+          <label>Fin de garantie</label>
+          <input type="date" name="garantie_fin">
+        </div>
+      </div>
 
-  <label>Numéro de série</label>
-  <input type="text" name="numero_serie" required>
+      <label>Statut</label>
+      <select name="statut">
+        <option value="en service">En service</option>
+        <option value="hs">HS</option>
+        <option value="retire">Retire</option>
+      </select>
 
-  <label>Date d'installation</label>
-  <input type="date" name="date_installation">
+      <button type="submit" class="mt-2">Enregistrer</button>
+    </form>
 
-  <label>Fin de garantie</label>
-  <input type="date" name="garantie_fin">
-
-  <label>Statut</label>
-  <select name="statut">
-    <option value="en service">En service</option>
-    <option value="hs">HS</option>
-    <option value="retire">Retiré</option>
-  </select>
-
-  <button type="submit">Enregistrer</button>
-</form>
-
-<p><a href="/materiels">← Retour</a></p>
+    <p class="mt-2"><a href="/materiels">Retour</a></p>
+  </div>
+</main>
 
 <script>
   const categorySelect = document.getElementById("category_id");

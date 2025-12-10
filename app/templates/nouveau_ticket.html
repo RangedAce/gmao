@@ -3,15 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Nouveau ticket</title>
-  <style>
-    body { font-family: sans-serif; margin: 20px; }
-    nav a { margin-right: 10px; }
-    form { max-width: 600px; }
-    label { display: block; margin-top: 10px; }
-    input, select, textarea { width: 100%; padding: 6px; margin-top: 4px; }
-    button { margin-top: 15px; padding: 8px 12px; }
-    .error { color: red; margin-top: 10px; }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
@@ -21,6 +13,8 @@
   <a href="/tickets">Tickets</a>
 </nav>
 
+<main>
+<div class="card">
 <h1>Nouveau ticket</h1>
 
 {% if error %}
@@ -189,6 +183,9 @@
 </form>
 
 <p><a href="/tickets">← Retour à la liste</a></p>
+
+</div>
+</main>
 
 </body>
 </html>

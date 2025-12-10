@@ -2,30 +2,50 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Matériel {{ m.id }}</title>
-  <style>
-    body { font-family: sans-serif; margin: 20px; }
-    p span { font-weight: bold; }
-  </style>
+  <title>Materiel {{ m.id }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
 
-<h1>Matériel #{{ m.id }}</h1>
+<nav>
+  <a href="/">Clients</a>
+  <a href="/materiels">Materiels</a>
+  <a href="/tickets">Tickets</a>
+  <span class="right">
+    {% if current_user %}
+      Connecte : {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
+    {% endif %}
+  </span>
+</nav>
 
-<p><span>Client :</span> CLT-{{ "%04d"|format(m.client.id) }} - {{ m.client.nom }}</p>
-<p><span>Catégorie :</span> {{ m.category.name if m.category else "N/A" }}</p>
-<p><span>Type :</span> {{ m.materiel_type.name if m.materiel_type else m.type }}</p>
-<p><span>Modèle :</span> {{ m.modele }}</p>
-<p><span>Numéro de série :</span> {{ m.numero_serie }}</p>
-<p><span>Date installation :</span> {{ m.date_installation }}</p>
-<p><span>Fin garantie :</span> {{ m.garantie_fin }}</p>
-<p><span>Statut :</span> {{ m.statut }}</p>
+<main>
+  <div class="card">
+    <div style="display:flex; justify-content: space-between; align-items:center;">
+      <h1>Materiel #{{ m.id }}</h1>
+      <a class="btn" href="/materiels/{{ m.id }}/edit">Modifier</a>
+    </div>
 
-<p>
-  <a href="/materiels/{{ m.id }}/edit">Modifier</a> |
-  <a href="/materiels">← Retour liste</a>
-</p>
+    <div class="grid-2 mt-2">
+      <div>
+        <p><span class="muted">Client :</span> CLT-{{ "%04d"|format(m.client.id) }} - {{ m.client.nom }}</p>
+        <p><span class="muted">Categorie :</span> {{ m.category.name if m.category else "N/A" }}</p>
+        <p><span class="muted">Type :</span> {{ m.materiel_type.name if m.materiel_type else m.type }}</p>
+      </div>
+      <div>
+        <p><span class="muted">Modele :</span> {{ m.modele }}</p>
+        <p><span class="muted">Numero de serie :</span> {{ m.numero_serie }}</p>
+        <p><span class="muted">Statut :</span> {{ m.statut }}</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <p><span class="muted">Date installation :</span> {{ m.date_installation }}</p>
+      <p><span class="muted">Fin garantie :</span> {{ m.garantie_fin }}</p>
+    </div>
+
+    <p class="mt-2"><a href="/materiels">Retour liste</a></p>
+  </div>
+</main>
 
 </body>
 </html>
