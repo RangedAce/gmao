@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import (
     Flask, render_template, request,
@@ -8,6 +8,7 @@ from flask import (
 import difflib
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import or_
 
 # ==========================
 #  CONFIG
@@ -554,8 +555,95 @@ def materiel_edit(id):
 # ==========================
 @app.route("/tickets")
 def liste_tickets():
-    tickets = Ticket.query.order_by(Ticket.id.desc()).all()
-    return render_template("tickets.html", tickets=tickets)
+    client_id = request.args.get("client_id", type=int)
+    materiel_type_id = request.args.get("materiel_type_id", type=int)
+    filters = {
+        "client_id": client_id,
+        "client_nom": (request.args.get("client_nom") or "").strip(),
+        "materiel_type_id": materiel_type_id,
+        "materiel_search": (request.args.get("materiel_search") or "").strip(),
+        "titre": (request.args.get("titre") or "").strip(),
+        "type": request.args.get("type") or "",
+        "priorite": request.args.get("priorite") or "",
+        "etat": request.args.get("etat") or "",
+        "date_debut": request.args.get("date_debut") or "",
+        "date_fin": request.args.get("date_fin") or "",
+    }
+
+    query = Ticket.query.join(Client).outerjoin(MaterielType, Ticket.materiel_type)
+
+    if filters["client_id"]:
+        query = query.filter(Ticket.id_client == filters["client_id"])
+    if filters["client_nom"]:
+        query = query.filter(Client.nom.ilike(f"%{filters['client_nom']}%"))
+
+    if filters["materiel_type_id"]:
+        query = query.filter(
+            or_(
+                Ticket.materiel_type_id == filters["materiel_type_id"],
+                Ticket.materiels.any(Materiel.type_id == filters["materiel_type_id"]),
+            )
+        )
+    if filters["materiel_search"]:
+        search_value = f"%{filters['materiel_search']}%"
+        query = query.filter(
+            Ticket.materiels.any(
+                or_(
+                    Materiel.type.ilike(search_value),
+                    Materiel.modele.ilike(search_value),
+                    Materiel.numero_serie.ilike(search_value),
+                )
+            )
+        )
+
+    if filters["titre"]:
+        query = query.filter(Ticket.titre.ilike(f"%{filters['titre']}%"))
+    if filters["type"]:
+        query = query.filter(Ticket.type == filters["type"])
+    if filters["priorite"]:
+        query = query.filter(Ticket.priorite == filters["priorite"])
+    if filters["etat"]:
+        query = query.filter(Ticket.etat == filters["etat"])
+
+    if filters["date_debut"]:
+        try:
+            date_start = datetime.strptime(filters["date_debut"], "%Y-%m-%d")
+            query = query.filter(Ticket.date_ouverture >= date_start)
+        except ValueError:
+            pass
+    if filters["date_fin"]:
+        try:
+            date_end = datetime.strptime(filters["date_fin"], "%Y-%m-%d") + timedelta(days=1)
+            query = query.filter(Ticket.date_ouverture < date_end)
+        except ValueError:
+            pass
+
+    sort = request.args.get("sort", "date_desc")
+    sort_map = {
+        "client": Client.nom.asc(),
+        "titre": Ticket.titre.asc(),
+        "type": Ticket.type.asc(),
+        "priorite": Ticket.priorite.asc(),
+        "etat": Ticket.etat.asc(),
+        "date_asc": Ticket.date_ouverture.asc(),
+        "date_desc": Ticket.date_ouverture.desc(),
+        "materiel": MaterielType.name.asc(),
+    }
+    order_clause = sort_map.get(sort, sort_map["date_desc"])
+    query = query.order_by(order_clause, Ticket.id.desc())
+
+    tickets = query.all()
+
+    clients = Client.query.order_by(Client.nom).all()
+    materiel_types = MaterielType.query.order_by(MaterielType.name).all()
+    return render_template(
+        "tickets.html",
+        tickets=tickets,
+        clients=clients,
+        materiel_types=materiel_types,
+        filters=filters,
+        sort=sort,
+    )
 
 
 @app.route("/tickets/nouveau", methods=["GET", "POST"])

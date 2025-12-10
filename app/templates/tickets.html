@@ -9,37 +9,118 @@
     table { border-collapse: collapse; width: 100%; margin-top: 20px; }
     th, td { border: 1px solid #ccc; padding: 8px; }
     th { background: #eee; }
+    .filter-box { margin-top: 10px; padding: 12px; border: 1px solid #ddd; background: #f9f9f9; border-radius: 4px; }
+    .filter-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 8px; }
+    .filter-row label { font-weight: bold; margin-right: 4px; }
+    .filter-row input, .filter-row select { padding: 6px 8px; }
+    .filter-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .reset-link { text-decoration: none; color: #444; }
   </style>
+</head>
+<body>
+
 <nav>
   <a href="/">Clients</a>
-  <a href="/materiels">Matériels</a>
+  <a href="/materiels">Materiels</a>
   <a href="/tickets">Tickets</a>
 
   <span style="float:right;">
     {% if current_user %}
-      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
-      — <a href="/logout">Déconnexion</a>
+      Connecte : {{ current_user.full_name }} ({{ current_user.role }})
+      - <a href="/logout">Deconnexion</a>
     {% endif %}
   </span>
 </nav>
 <hr>
 
-</head>
-<body>
-
 <h1>Tickets</h1>
 
-<p><a href="/tickets/nouveau">➕ Nouveau ticket</a></p>
+<p><a href="/tickets/nouveau">+ Nouveau ticket</a></p>
+
+<div class="filter-box">
+  <form method="get">
+    <div class="filter-row">
+      <label for="client_id">Client</label>
+      <select name="client_id" id="client_id">
+        <option value="">Tous</option>
+        {% for c in clients %}
+        <option value="{{ c.id }}" {% if filters.client_id and filters.client_id|int == c.id %}selected{% endif %}>{{ c.nom }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" name="client_nom" placeholder="Nom client" value="{{ filters.client_nom }}">
+
+      <label for="materiel_type_id">Materiel</label>
+      <select name="materiel_type_id" id="materiel_type_id">
+        <option value="">Tous</option>
+        {% for mt in materiel_types %}
+        <option value="{{ mt.id }}" {% if filters.materiel_type_id and filters.materiel_type_id|int == mt.id %}selected{% endif %}>{{ mt.name }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" name="materiel_search" placeholder="Type / modele / numero de serie" value="{{ filters.materiel_search }}">
+    </div>
+
+    <div class="filter-row">
+      <label for="titre">Titre</label>
+      <input type="text" name="titre" id="titre" value="{{ filters.titre }}" placeholder="Rechercher un titre">
+
+      <label for="type">Type</label>
+      <select name="type" id="type">
+        <option value="">Tous</option>
+        <option value="incident" {% if filters.type == "incident" %}selected{% endif %}>Incident</option>
+        <option value="demande" {% if filters.type == "demande" %}selected{% endif %}>Demande</option>
+      </select>
+
+      <label for="priorite">Priorite</label>
+      <select name="priorite" id="priorite">
+        <option value="">Toutes</option>
+        <option value="basse" {% if filters.priorite == "basse" %}selected{% endif %}>Basse</option>
+        <option value="normale" {% if filters.priorite == "normale" %}selected{% endif %}>Normale</option>
+        <option value="haute" {% if filters.priorite == "haute" %}selected{% endif %}>Haute</option>
+      </select>
+
+      <label for="etat">Etat</label>
+      <select name="etat" id="etat">
+        <option value="">Tous</option>
+        <option value="ouvert" {% if filters.etat == "ouvert" %}selected{% endif %}>Ouvert</option>
+        <option value="en_cours" {% if filters.etat == "en_cours" %}selected{% endif %}>En cours</option>
+        <option value="resolu" {% if filters.etat == "resolu" %}selected{% endif %}>Resolu</option>
+        <option value="cloture" {% if filters.etat == "cloture" %}selected{% endif %}>Cloture</option>
+      </select>
+    </div>
+
+    <div class="filter-row filter-actions">
+      <label for="date_debut">Ouvert du</label>
+      <input type="date" name="date_debut" id="date_debut" value="{{ filters.date_debut }}">
+      <label for="date_fin">au</label>
+      <input type="date" name="date_fin" id="date_fin" value="{{ filters.date_fin }}">
+
+      <label for="sort">Trier par</label>
+      <select name="sort" id="sort">
+        <option value="date_desc" {% if sort == "date_desc" %}selected{% endif %}>Date d'ouverture (recents)</option>
+        <option value="date_asc" {% if sort == "date_asc" %}selected{% endif %}>Date d'ouverture (anciens)</option>
+        <option value="client" {% if sort == "client" %}selected{% endif %}>Client (A-Z)</option>
+        <option value="titre" {% if sort == "titre" %}selected{% endif %}>Titre (A-Z)</option>
+        <option value="type" {% if sort == "type" %}selected{% endif %}>Type</option>
+        <option value="priorite" {% if sort == "priorite" %}selected{% endif %}>Priorite</option>
+        <option value="etat" {% if sort == "etat" %}selected{% endif %}>Etat</option>
+        <option value="materiel" {% if sort == "materiel" %}selected{% endif %}>Type materiel</option>
+      </select>
+
+      <button type="submit">Filtrer / Trier</button>
+      <a class="reset-link" href="/tickets">Reinitialiser</a>
+    </div>
+  </form>
+</div>
 
 <table>
   <tr>
     <th>ID</th>
     <th>Titre</th>
     <th>Client</th>
-    <th>Matériel</th>
+    <th>Materiel</th>
     <th>Type</th>
-    <th>Priorité</th>
-    <th>État</th>
+    <th>Priorite</th>
+    <th>Etat</th>
     <th>Ouvert le</th>
   </tr>
 
@@ -47,16 +128,16 @@
   <tr>
     <td><a href="/tickets/{{ t.id }}">{{ t.id }}</a></td>
     <td>{{ t.titre }}</td>
-    <td>CLT-{{ "%04d"|format(t.client.id) }} – {{ t.client.nom }}</td>
-<td>
-  {% if t.materiels %}
-    {% for m in t.materiels %}
-      {{ m.type }} {{ m.modele }} ({{ m.numero_serie }}){% if not loop.last %}, {% endif %}
-    {% endfor %}
-  {% else %}
-    -
-  {% endif %}
-</td>
+    <td>CLT-{{ "%04d"|format(t.client.id) }} - {{ t.client.nom }}</td>
+    <td>
+      {% if t.materiels %}
+        {% for m in t.materiels %}
+          {{ m.type }} {{ m.modele }} ({{ m.numero_serie }}){% if not loop.last %}, {% endif %}
+        {% endfor %}
+      {% else %}
+        -
+      {% endif %}
+    </td>
 
     <td>{{ t.type }}</td>
     <td>{{ t.priorite }}</td>
@@ -66,7 +147,7 @@
   {% endfor %}
 </table>
 
-<p><a href="/">← Retour accueil</a></p>
+<p><a href="/">Retour accueil</a></p>
 
 </body>
 </html>
