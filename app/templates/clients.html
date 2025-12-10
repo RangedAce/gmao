@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Clients</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<nav>
+  <a href="/">Accueil</a>
+  <a href="/tickets">Tickets</a>
+  <a href="/materiels">Materiel</a>
+  <a href="/clients">Clients</a>
+  <span class="right">
+    {% if current_user %}
+      <a href="/me/password">Mon profil</a>
+      {% if is_admin %} | <a href="/users">Gerer les utilisateurs</a>{% endif %}
+      | {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
+    {% else %}
+      <a href="/login">Connexion</a>
+    {% endif %}
+  </span>
+</nav>
+
+<main>
+  <div class="card">
+    <div style="display:flex; justify-content: space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+      <h1>Clients</h1>
+      <a href="/clients/nouveau" class="btn">+ Ajouter un client</a>
+    </div>
+
+    <form method="get" class="form-row mt-1">
+      <div>
+        <label for="code">Code client</label>
+        <input type="text" id="code" name="code" placeholder="CLT-0001" value="{{ filters.code }}">
+      </div>
+      <div>
+        <label for="nom">Nom</label>
+        <input type="text" id="nom" name="nom" placeholder="Rechercher par nom" value="{{ filters.nom }}">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn">Filtrer</button>
+        <a class="btn secondary" href="/clients">Réinitialiser</a>
+      </div>
+    </form>
+
+    {% if clients %}
+      <table class="mt-2">
+        <tr>
+          <th>Code</th>
+          <th>Nom</th>
+          <th>Actions</th>
+        </tr>
+        {% for c in clients %}
+          <tr>
+            <td>CLT-{{ "%04d"|format(c.id) }}</td>
+            <td>{{ c.nom }}</td>
+            <td style="display:flex; gap:8px;">
+              <a class="btn secondary" href="/clients/{{ c.id }}">Fiche</a>
+              <a class="btn secondary" href="/clients/{{ c.id }}/edit">Modifier</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p class="muted mt-2">Aucun client pour l'instant.</p>
+    {% endif %}
+  </div>
+</main>
+
+</body>
+</html>

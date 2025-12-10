@@ -403,22 +403,6 @@ def logout():
 # ==========================
 @app.route("/")
 def index():
-    code_query = (request.args.get("code") or "").strip()
-    name_query = (request.args.get("nom") or "").strip()
-
-    client_query = Client.query
-    if code_query:
-        code_digits = code_query.replace("CLT-", "").strip()
-        try:
-            code_int = int(code_digits)
-            client_query = client_query.filter(Client.id == code_int)
-        except ValueError:
-            client_query = client_query.filter(Client.id == -1)
-    if name_query:
-        client_query = client_query.filter(Client.nom.ilike(f"%{name_query}%"))
-
-    clients = client_query.order_by(Client.id).all()
-
     now = datetime.now()
     threshold = now - timedelta(hours=24)
     tickets_open = Ticket.query.filter(Ticket.etat != "cloture").all()
@@ -442,12 +426,30 @@ def index():
 
     return render_template(
         "index.html",
-        clients=clients,
-        filters={"code": code_query, "nom": name_query},
         tickets_unhandled=tickets_unhandled,
         state_counts=state_counts,
         assigned_counts=assigned_counts,
     )
+
+
+@app.route("/clients")
+def liste_clients():
+    code_query = (request.args.get("code") or "").strip()
+    name_query = (request.args.get("nom") or "").strip()
+
+    client_query = Client.query
+    if code_query:
+        code_digits = code_query.replace("CLT-", "").strip()
+        try:
+            code_int = int(code_digits)
+            client_query = client_query.filter(Client.id == code_int)
+        except ValueError:
+            client_query = client_query.filter(Client.id == -1)
+    if name_query:
+        client_query = client_query.filter(Client.nom.ilike(f"%{name_query}%"))
+
+    clients = client_query.order_by(Client.id).all()
+    return render_template("clients.html", clients=clients, filters={"code": code_query, "nom": name_query})
 
 
 @app.route("/clients/nouveau", methods=["GET", "POST"])
@@ -461,7 +463,7 @@ def nouveau_client():
             return render_template("nouveau_client.html", error="Nom obligatoire")
         db.session.add(Client(nom=nom, contract_type=contract_type, contract_balance=balance_value))
         db.session.commit()
-        return redirect(url_for("index"))
+        return redirect(url_for("liste_clients"))
     return render_template("nouveau_client.html")
 @app.route("/clients/<int:id>/edit", methods=["GET", "POST"])
 def edit_client(id):
@@ -478,7 +480,7 @@ def edit_client(id):
         client.contract_type = contract_type
         client.contract_balance = balance_value
         db.session.commit()
-        return redirect(url_for("index"))
+        return redirect(url_for("liste_clients"))
 
     return render_template("edit_client.html", client=client)
 
