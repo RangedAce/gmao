@@ -8,7 +8,7 @@ from flask import (
 import difflib
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import or_
+from sqlalchemy import or_, inspect
 
 # ==========================
 #  CONFIG
@@ -218,7 +218,10 @@ def _require_admin():
 # ==========================
 def ensure_schema():
     """Crée les tables/colonnes manquantes au démarrage (fallback sans migrations Alembic)."""
-    with db.engine.connect() as conn:
+    engine = db.engine
+    inspector = inspect(engine)
+
+    with engine.connect() as conn:
         conn.execute(db.text("""
         CREATE TABLE IF NOT EXISTS materiel_categories (
             id SERIAL PRIMARY KEY,
@@ -290,10 +293,18 @@ def ensure_schema():
             conditions TEXT,
             prix_total FLOAT,
             resilie BOOLEAN NOT NULL DEFAULT FALSE,
-            reconductible BOOLEAN NOT NULL DEFAULT FALSE
+        reconductible BOOLEAN NOT NULL DEFAULT FALSE
         );
         """))
         conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_maintenance_contracts_client ON maintenance_contracts(client_id);"))
+
+        # Fallback si la colonne assigned_user_id manque encore (ancienne base existante)
+        ticket_columns = {col["name"] for col in inspector.get_columns("tickets")}
+        if "assigned_user_id" not in ticket_columns:
+            conn.execute(db.text("""
+            ALTER TABLE tickets
+            ADD COLUMN assigned_user_id INTEGER REFERENCES users(id);
+            """))
 
 
 with app.app_context():
