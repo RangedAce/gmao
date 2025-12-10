@@ -226,7 +226,7 @@ form .form-row {
 .col-menu-btn { background: rgba(194,175,240,0.15); color: #fff; border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; cursor: pointer; }
 .col-menu { position: absolute; right:0; top: 38px; background: #0f1b2a; border: 1px solid var(--border); border-radius: 10px; padding: 10px; box-shadow: 0 12px 30px rgba(0,0,0,0.35); min-width: 220px; z-index: 20; display: none; }
 .col-menu.visible { display: block; }
-.col-menu label { display: flex; align-items: center; gap: 8px; margin: 4px 0; color: var(--text); }
+.col-menu label { display: flex; align-items: center; gap: 8px; margin: 4px 0; color: var(--text); white-space: nowrap; }
 .col-menu .lock { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 8px; }
 .draggable-th { cursor: move; user-select: none; }
 .drag-over { outline: 2px dashed var(--accent); outline-offset: -4px; }
