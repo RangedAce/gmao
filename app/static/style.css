@@ -199,7 +199,7 @@ form .form-row {
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
 .form-actions { display: flex; align-items: center; gap: 8px; }
-.form-actions .btn, .form-actions button { padding: 9px 12px; }
+.form-actions .btn, .form-actions button { padding: 9px 12px; height: auto; }
 
 .pill-checkbox {
   display: inline-flex;

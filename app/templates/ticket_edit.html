@@ -8,17 +8,20 @@
 <body>
 
 <nav>
-  <a href="/">Clients</a>
-  <a href="/materiels">Matériels</a>
+  <a href="/">Accueil</a>
   <a href="/tickets">Tickets</a>
+  <a href="/materiels">Materiel</a>
+  <a href="/clients">Clients</a>
   <span class="right">
     {% if current_user %}
-      Connecté : {{ current_user.full_name }} ({{ current_user.role }})
-      &rarr; <a href="/logout">Déconnexion</a>
+      <a href="/me/password">Mon profil</a>
+      {% if is_admin %} | <a href="/users">Gerer utilisateurs & groupes</a>{% endif %}
+      | {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
+    {% else %}
+      <a href="/login">Connexion</a>
     {% endif %}
   </span>
 </nav>
-<hr>
 
 <main>
 <div class="card">
@@ -29,7 +32,7 @@
   <select name="id_client" id="id_client" required>
     {% for c in clients %}
       <option value="{{ c.id }}" {% if c.id == t.id_client %}selected{% endif %}>
-        CLT-{{ "%04d"|format(c.id) }} &rarr; {{ c.nom }}
+        CLT-{{ "%04d"|format(c.id) }} → {{ c.nom }}
       </option>
     {% endfor %}
   </select>

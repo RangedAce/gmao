@@ -1033,8 +1033,32 @@ def list_users():
     if not admin:
         return redirect(url_for("index"))
 
+    error = None
+    success = False
+
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add_group":
+            name = (request.form.get("name") or "").strip()
+            selected_user_ids = request.form.getlist("user_ids")
+            if not name:
+                error = "Le nom est obligatoire."
+            elif UserGroup.query.filter_by(name=name).first():
+                error = "Ce groupe existe déjà."
+            else:
+                g = UserGroup(name=name)
+                for uid in selected_user_ids:
+                    user = User.query.get(int(uid))
+                    if user:
+                        g.users.append(user)
+                db.session.add(g)
+                db.session.commit()
+                success = True
+
     users = User.query.order_by(User.id).all()
-    return render_template("users.html", users=users, roles=AVAILABLE_ROLES)
+    groups = UserGroup.query.order_by(UserGroup.name.asc()).all()
+    all_users = User.query.order_by(User.full_name.asc()).all()
+    return render_template("users.html", users=users, roles=AVAILABLE_ROLES, groups=groups, all_users=all_users, error=error, success=success)
 
 
 @app.route("/users/nouveau", methods=["GET", "POST"])

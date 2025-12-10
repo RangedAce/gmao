@@ -15,8 +15,10 @@
   <span class="right">
     {% if current_user %}
       <a href="/me/password">Mon profil</a>
-      {% if is_admin %} | <a href="/users">Gerer les utilisateurs</a>{% endif %}
+      {% if is_admin %} | <a href="/users">Gerer utilisateurs & groupes</a>{% endif %}
       | {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
+    {% else %}
+      <a href="/login">Connexion</a>
     {% endif %}
   </span>
 </nav>
@@ -52,3 +54,4 @@
 
 </body>
 </html>
+

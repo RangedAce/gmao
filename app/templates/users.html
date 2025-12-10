@@ -8,13 +8,17 @@
 <body>
 
 <nav>
-  <a href="/">Clients</a>
-  <a href="/materiels">Materiels</a>
+  <a href="/">Accueil</a>
   <a href="/tickets">Tickets</a>
-  <a href="/users">Utilisateurs</a>
+  <a href="/materiels">Materiel</a>
+  <a href="/clients">Clients</a>
   <span class="right">
     {% if current_user %}
-      Connecte : {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
+      <a href="/me/password">Mon profil</a>
+      {% if is_admin %} | <a href="/users">Gerer utilisateurs & groupes</a>{% endif %}
+      | {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
+    {% else %}
+      <a href="/login">Connexion</a>
     {% endif %}
   </span>
 </nav>
@@ -42,10 +46,56 @@
         </tr>
       {% endfor %}
     </table>
+  </div>
 
-    <p class="muted mt-2"><a href="/">Retour</a></p>
+  <div class="card">
+    <h2>Groupes d'utilisateurs</h2>
+    {% if success %}<p style="color:#7cffbf;">Groupe créé.</p>{% endif %}
+    {% if error %}<p style="color:#ff8a8a;">{{ error }}</p>{% endif %}
+
+    <form method="post" class="mt-1">
+      <input type="hidden" name="action" value="add_group">
+      <label for="name">Nom du groupe</label>
+      <input type="text" id="name" name="name" placeholder="Hotline, Support N1, etc." required>
+
+      <label for="user_ids">Utilisateurs</label>
+      <select id="user_ids" name="user_ids" multiple size="5">
+        {% for u in all_users %}
+          <option value="{{ u.id }}">{{ u.full_name }} ({{ u.role }})</option>
+        {% endfor %}
+      </select>
+
+      <div class="form-actions mt-1">
+        <button type="submit" class="btn">Créer le groupe</button>
+      </div>
+    </form>
+
+    <h3 class="mt-2">Groupes existants</h3>
+    {% if groups %}
+      <table class="mt-1">
+        <tr>
+          <th>Nom</th>
+          <th>Membres</th>
+        </tr>
+        {% for g in groups %}
+          <tr>
+            <td>{{ g.name }}</td>
+            <td>
+              {% if g.users %}
+                {{ ", ".join([u.full_name for u in g.users]) }}
+              {% else %}
+                Aucun membre
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p class="muted">Aucun groupe encore.</p>
+    {% endif %}
   </div>
 </main>
 
 </body>
 </html>
+
