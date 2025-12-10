@@ -17,8 +17,6 @@
       <a href="/me/password">Mon profil</a>
       {% if is_admin %} | <a href="/users">Gerer utilisateurs & groupes</a>{% endif %}
       | {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
-    {% else %}
-      <a href="/login">Connexion</a>
     {% endif %}
   </span>
 </nav>
@@ -33,26 +31,9 @@
       </div>
     </div>
 
-    <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; margin-bottom:10px;">
-      <div class="card" style="flex:1; min-width:280px; padding:12px;">
-        <h3 style="margin-top:0;">Colonnes affichées</h3>
-        <div class="form-actions" style="margin-bottom:8px;">
-          <button type="button" class="btn" id="col-up">Monter</button>
-          <button type="button" class="btn" id="col-down">Descendre</button>
-        </div>
-        <select id="col-select" multiple size="8" style="width:100%; min-height:180px;">
-          <option value="id">ID</option>
-          <option value="client">Client</option>
-          <option value="categorie">Categorie</option>
-          <option value="type">Type</option>
-          <option value="modele">Modele</option>
-          <option value="serie">No Serie</option>
-          <option value="statut">Statut</option>
-          <option value="date_installation">Date installation</option>
-          <option value="garantie">Fin garantie</option>
-          <option value="actions">Actions</option>
-        </select>
-      </div>
+    <div class="table-toolbar">
+      <button type="button" class="col-menu-btn" id="mat-menu-btn">☰ Colonnes</button>
+      <div class="col-menu" id="mat-menu"></div>
     </div>
 
     <table id="materiels-table" class="mt-2">
@@ -61,18 +42,18 @@
       </thead>
       <tbody id="materiels-body">
       {% for m in materiels %}
-        <tr>
-          <td data-col="id"><a href="/materiels/{{ m.id }}">{{ m.id }}</a></td>
-          <td data-col="client">{{ m.client.nom }}</td>
-          <td data-col="categorie">{{ m.category.name if m.category else "N/A" }}</td>
-          <td data-col="type">{{ m.materiel_type.name if m.materiel_type else m.type }}</td>
-          <td data-col="modele">{{ m.modele }}</td>
-          <td data-col="serie">{{ m.numero_serie }}</td>
-          <td data-col="statut">{{ m.statut }}</td>
-          <td data-col="date_installation">{{ m.date_installation or "-" }}</td>
-          <td data-col="garantie">{{ m.garantie_fin or "-" }}</td>
-          <td data-col="actions"><a class="btn secondary" href="/materiels/{{ m.id }}/edit">Modifier</a></td>
-        </tr>
+      <tr>
+        <td data-col="id"><a href="/materiels/{{ m.id }}">{{ m.id }}</a></td>
+        <td data-col="client">{{ m.client.nom }}</td>
+        <td data-col="categorie">{{ m.category.name if m.category else "N/A" }}</td>
+        <td data-col="type">{{ m.materiel_type.name if m.materiel_type else m.type }}</td>
+        <td data-col="modele">{{ m.modele }}</td>
+        <td data-col="serie">{{ m.numero_serie }}</td>
+        <td data-col="statut">{{ m.statut }}</td>
+        <td data-col="date_installation">{{ m.date_installation or "-" }}</td>
+        <td data-col="garantie">{{ m.garantie_fin or "-" }}</td>
+        <td data-col="actions"><a class="btn secondary" href="/materiels/{{ m.id }}/edit">Modifier</a></td>
+      </tr>
       {% endfor %}
       </tbody>
     </table>
@@ -95,78 +76,123 @@
     actions: "Actions",
   };
   const matDefault = ["id","client","categorie","type","modele","serie","statut","date_installation","garantie","actions"];
-  const matKey = "materiels_columns_order_v1";
+  const matKey = "materiels_columns_state_v3";
 
-  function loadMatOrder() {
+  function loadMatState() {
     const stored = localStorage.getItem(matKey);
-    if (!stored) return [...matDefault];
+    if (!stored) return { order:[...matDefault], visible:new Set(matDefault), locked:false };
     try {
-      const arr = JSON.parse(stored);
-      return Array.isArray(arr) && arr.length ? arr.filter(c => matCols[c]) : [...matDefault];
-    } catch(_) { return [...matDefault]; }
+      const obj = JSON.parse(stored);
+      const order = Array.isArray(obj.order) && obj.order.length ? obj.order.filter(c => matCols[c]) : [...matDefault];
+      const visible = new Set(Array.isArray(obj.visible) && obj.visible.length ? obj.visible.filter(c => matCols[c]) : order);
+      const locked = !!obj.locked;
+      return { order, visible, locked };
+    } catch(_) { return { order:[...matDefault], visible:new Set(matDefault), locked:false }; }
   }
-  function saveMatOrder(order){ localStorage.setItem(matKey, JSON.stringify(order)); }
+  function saveMatState(order, visible, locked) { localStorage.setItem(matKey, JSON.stringify({ order, visible:[...visible], locked })); }
 
-  function applyMatOrder(order){
+  function applyMatOrder(order, visible, locked) {
     const head = document.getElementById("materiels-head");
     const rows = document.querySelectorAll("#materiels-body tr");
     head.innerHTML = "";
     order.forEach(col => {
+      if (!visible.has(col)) return;
       const th = document.createElement("th");
       th.textContent = matCols[col] || col;
+      th.dataset.col = col;
+      th.classList.add("draggable-th");
+      th.draggable = !locked;
       head.appendChild(th);
     });
     rows.forEach(row => {
       const cells = {};
       row.querySelectorAll("td").forEach(td => cells[td.dataset.col] = td);
       row.innerHTML = "";
-      order.forEach(col => { if (cells[col]) row.appendChild(cells[col]); });
+      order.forEach(col => {
+        if (!visible.has(col)) return;
+        if (cells[col]) row.appendChild(cells[col]);
+      });
     });
   }
 
-  function syncMatSelect(order){
-    const select = document.getElementById("col-select");
-    select.innerHTML = "";
+  function buildMatMenu(order, visible, locked) {
+    const menu = document.getElementById("mat-menu");
+    menu.innerHTML = "";
     Object.entries(matCols).forEach(([k,v]) => {
-      const opt = document.createElement("option");
-      opt.value = k; opt.textContent = v; select.appendChild(opt);
+      const lb = document.createElement("label");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = k;
+      cb.checked = visible.has(k);
+      cb.addEventListener("change", () => {
+        if (cb.checked) visible.add(k); else visible.delete(k);
+        saveMatState(order, visible, locked);
+        applyMatOrder(order, visible, locked);
+      });
+      lb.appendChild(cb);
+      lb.append(" " + v);
+      menu.appendChild(lb);
     });
-    order.forEach(col => {
-      const opt = select.querySelector(`option[value="${col}"]`);
-      if (opt) opt.selected = true;
+    const lockLabel = document.createElement("label");
+    lockLabel.classList.add("lock");
+    const lockCb = document.createElement("input");
+    lockCb.type = "checkbox";
+    lockCb.checked = locked;
+    lockCb.addEventListener("change", () => {
+      saveMatState(order, visible, lockCb.checked);
+      applyMatOrder(order, visible, lockCb.checked);
     });
-  }
-
-  function moveMat(dir){
-    const select = document.getElementById("col-select");
-    const selected = Array.from(select.selectedOptions).map(o => o.value);
-    let current = loadMatOrder();
-    selected.forEach(col => {
-      const idx = current.indexOf(col);
-      if (idx === -1) return;
-      const swap = dir === "up" ? idx-1 : idx+1;
-      if (swap < 0 || swap >= current.length) return;
-      [current[idx], current[swap]] = [current[swap], current[idx]];
-    });
-    saveMatOrder(current);
-    syncMatSelect(current);
-    applyMatOrder(current);
+    lockLabel.appendChild(lockCb);
+    lockLabel.append(" Verrouiller l'ordre");
+    menu.appendChild(lockLabel);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    const order = loadMatOrder();
-    syncMatSelect(order);
-    applyMatOrder(order);
+    const state = loadMatState();
+    applyMatOrder(state.order, state.visible, state.locked);
+    buildMatMenu(state.order, state.visible, state.locked);
 
-    document.getElementById("col-up").addEventListener("click", () => moveMat("up"));
-    document.getElementById("col-down").addEventListener("click", () => moveMat("down"));
-    document.getElementById("col-select").addEventListener("change", () => {
-      let current = loadMatOrder();
-      const selected = Array.from(document.getElementById("col-select").selectedOptions).map(o => o.value);
-      current = current.filter(c => selected.includes(c));
-      Object.keys(matCols).forEach(col => { if (selected.includes(col) && !current.includes(col)) current.push(col); });
-      saveMatOrder(current);
-      applyMatOrder(current);
+    const menuBtn = document.getElementById("mat-menu-btn");
+    const menu = document.getElementById("mat-menu");
+    menuBtn.addEventListener("click", () => menu.classList.toggle("visible"));
+    document.addEventListener("click", (e) => {
+      if (!menu.contains(e.target) && e.target !== menuBtn) menu.classList.remove("visible");
+    });
+
+    let dragCol = null;
+    const head = document.getElementById("materiels-head");
+    head.addEventListener("dragstart", (e) => {
+      dragCol = e.target.dataset.col;
+      e.dataTransfer.effectAllowed = "move";
+    });
+    head.addEventListener("dragover", (e) => {
+      if (state.locked || !dragCol) return;
+      e.preventDefault();
+      const target = e.target.closest("th");
+      if (!target || target.dataset.col === dragCol) return;
+      target.classList.add("drag-over");
+    });
+    head.addEventListener("dragleave", (e) => {
+      const target = e.target.closest("th");
+      if (target) target.classList.remove("drag-over");
+    });
+    head.addEventListener("drop", (e) => {
+      if (state.locked || !dragCol) return;
+      e.preventDefault();
+      const target = e.target.closest("th");
+      if (!target) return;
+      target.classList.remove("drag-over");
+      const targetCol = target.dataset.col;
+      if (!targetCol || targetCol === dragCol) return;
+      const from = state.order.indexOf(dragCol);
+      const to = state.order.indexOf(targetCol);
+      if (from === -1 || to === -1) return;
+      state.order.splice(from, 1);
+      state.order.splice(to, 0, dragCol);
+      saveMatState(state.order, state.visible, state.locked);
+      applyMatOrder(state.order, state.visible, state.locked);
+      buildMatMenu(state.order, state.visible, state.locked);
+      dragCol = null;
     });
   });
 </script>
