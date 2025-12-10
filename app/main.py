@@ -126,6 +126,24 @@ class User(db.Model):
     role = db.Column(db.String(32), nullable=False, default="technicien")
 
 
+class UserGroup(db.Model):
+    __tablename__ = "user_groups"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), unique=True, nullable=False)
+
+    users = db.relationship(
+        "User",
+        secondary="user_group_members",
+        backref="groups",
+    )
+
+
+class UserGroupMember(db.Model):
+    __tablename__ = "user_group_members"
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey("user_groups.id"), primary_key=True)
+
+
 class TicketMateriel(db.Model):
     """
     Table de liaison N–N entre Ticket et Materiel.
@@ -292,10 +310,26 @@ def ensure_schema():
             conditions TEXT,
             prix_total FLOAT,
             resilie BOOLEAN NOT NULL DEFAULT FALSE,
-            reconductible BOOLEAN NOT NULL DEFAULT FALSE
+        reconductible BOOLEAN NOT NULL DEFAULT FALSE
         );
         """))
         conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_maintenance_contracts_client ON maintenance_contracts(client_id);"))
+
+        # Groupes utilisateurs
+        conn.execute(db.text("""
+        CREATE TABLE IF NOT EXISTS user_groups (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(128) UNIQUE NOT NULL
+        );
+        """))
+        conn.execute(db.text("""
+        CREATE TABLE IF NOT EXISTS user_group_members (
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            group_id INTEGER NOT NULL REFERENCES user_groups(id),
+            PRIMARY KEY (user_id, group_id)
+        );
+        """))
+        conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_user_group_members_group ON user_group_members(group_id);"))
 
         # Fallback évolutif pour les colonnes ajoutées après coup
         columns_to_add = {
@@ -1027,7 +1061,7 @@ def ticket_edit(id):
 AVAILABLE_ROLES = ("read_only", "technicien", "admin")
 
 
-@app.route("/users")
+@app.route("/users", methods=["GET", "POST"])
 def list_users():
     admin = _require_admin()
     if not admin:
