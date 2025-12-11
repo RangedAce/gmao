@@ -1351,7 +1351,11 @@ def api_planning_events():
 
     events = []
     for ticket in tickets:
-        color = "#" + hex(hash(ticket.assigned_group_id or ticket.assigned_user_id or 0) % 16777215)[2:].zfill(6)
+        # Couleur stable par ressource; défaut lisible si non assigné
+        if ticket.assigned_group_id or ticket.assigned_user_id:
+            color = "#" + hex(hash(ticket.assigned_group_id or ticket.assigned_user_id) % 16777215)[2:].zfill(6)
+        else:
+            color = "#457eac"
         
         title = f"#{ticket.id} {ticket.titre}"
         if ticket.assigned_user:
@@ -1379,6 +1383,11 @@ def api_planning_events():
                 "client": ticket.client.nom,
                 "user": ticket.assigned_user.full_name if ticket.assigned_user else None,
                 "group": ticket.assigned_group.name if ticket.assigned_group else None,
+                "titre": ticket.titre,
+                "etat": ticket.etat,
+                "priorite": ticket.priorite,
+                "description": ticket.description,
+                "url": url_for("ticket_fiche", id=ticket.id),
             }
         })
 

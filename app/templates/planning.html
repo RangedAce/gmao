@@ -59,6 +59,17 @@
     <span class="close-button">&times;</span>
     <h2>Modifier l'intervention</h2>
     <form id="edit-form">
+      <div class="card" style="padding: 12px; margin-bottom: 12px; background: #0f1b2a;">
+        <div id="summary-title" style="font-weight: 700; margin-bottom: 6px;">Ticket</div>
+        <div id="summary-client" class="muted" style="margin-bottom: 4px;"></div>
+        <div id="summary-responsable" class="muted" style="margin-bottom: 4px;"></div>
+        <div id="summary-etat" class="muted" style="margin-bottom: 4px;"></div>
+        <div id="summary-priorite" class="muted" style="margin-bottom: 4px;"></div>
+        <div id="summary-description" class="muted" style="margin-top: 6px; line-height: 1.4;"></div>
+        <div class="form-actions" style="margin-top: 10px; gap: 6px;">
+          <button type="button" id="open-ticket" class="btn secondary">Ouvrir le ticket</button>
+        </div>
+      </div>
       <div class="form-group">
         <label for="edit-duration-input">Durée (minutes)</label>
         <input type="number" id="edit-duration-input" min="15" step="15" value="60" required>
@@ -81,11 +92,19 @@
     var closeButtons = document.querySelectorAll('.close-button');
     var assignForm = document.getElementById('assign-form');
     var editForm = document.getElementById('edit-form');
+    var ticketSelect = document.getElementById('ticket-select');
     var clickedDateInput = document.getElementById('clicked-date');
     var resourceIdInput = document.getElementById('resource-id');
     var resourceSelect = document.getElementById('resource-select');
     var editDurationInput = document.getElementById('edit-duration-input');
     var deleteEventBtn = document.getElementById('delete-event');
+    var openTicketBtn = document.getElementById('open-ticket');
+    var summaryTitle = document.getElementById('summary-title');
+    var summaryClient = document.getElementById('summary-client');
+    var summaryResponsable = document.getElementById('summary-responsable');
+    var summaryEtat = document.getElementById('summary-etat');
+    var summaryPriorite = document.getElementById('summary-priorite');
+    var summaryDescription = document.getElementById('summary-description');
     var activeEvent = null;
 
     // Construit une ISO locale sans décalage (évite de sauver à 07h quand on clique 08h)
@@ -93,6 +112,26 @@
       const tzOffsetMs = dateObj.getTimezoneOffset() * 60000;
       const local = new Date(dateObj.getTime() - tzOffsetMs);
       return local.toISOString().slice(0, 19); // yyyy-MM-ddTHH:mm:ss
+    }
+
+    function removeTicketOption(ticketId) {
+      Array.from(ticketSelect.options).forEach(function(opt) {
+        if (opt.value === String(ticketId)) {
+          opt.remove();
+        }
+      });
+    }
+
+    function addTicketOption(ticketId, label) {
+      var exists = Array.from(ticketSelect.options).some(function(opt) {
+        return opt.value === String(ticketId);
+      });
+      if (!exists) {
+        var opt = document.createElement('option');
+        opt.value = ticketId;
+        opt.textContent = label;
+        ticketSelect.appendChild(opt);
+      }
     }
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
@@ -190,6 +229,7 @@
           alert("Erreur lors de l'assignation du ticket");
         } else {
           assignModal.style.display = 'none';
+          removeTicketOption(ticketId);
           calendar.refetchEvents();
         }
       });
@@ -279,6 +319,8 @@
           alert('Erreur lors de l\'annulation');
         } else {
           editModal.style.display = 'none';
+          addTicketOption(event.id, event.title || ('#' + event.id));
+          ticketSelect.value = event.id;
           calendar.refetchEvents();
         }
       });
@@ -289,10 +331,31 @@
       return Math.round((end - start) / 60000);
     }
 
+    function fillSummary(ev) {
+      if (!ev) return;
+      var props = ev.extendedProps || {};
+      summaryTitle.textContent = ev.title || ('Ticket #' + ev.id);
+      summaryClient.textContent = props.client ? 'Client : ' + props.client : '';
+      var resp = props.user || props.group || 'Non assigné';
+      summaryResponsable.textContent = 'Responsable : ' + resp;
+      summaryEtat.textContent = props.etat ? 'État : ' + props.etat : '';
+      summaryPriorite.textContent = props.priorite ? 'Priorité : ' + props.priorite : '';
+      var desc = props.description || '';
+      summaryDescription.textContent = desc ? ('Description : ' + desc) : '';
+      openTicketBtn.onclick = function() {
+        if (props.url) {
+          window.location.href = props.url;
+        } else {
+          window.location.href = '/tickets/' + ev.id;
+        }
+      };
+    }
+
     calendar.setOption('eventClick', function(info) {
       activeEvent = info.event;
       var currentDuration = minutesDiff(activeEvent.start, activeEvent.end) || 60;
       editDurationInput.value = currentDuration;
+      fillSummary(activeEvent);
       editModal.style.display = 'block';
     });
 
