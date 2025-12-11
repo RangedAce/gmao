@@ -66,6 +66,13 @@
     var resourceIdInput = document.getElementById('resource-id');
     var resourceSelect = document.getElementById('resource-select');
 
+    // Construit une ISO locale sans décalage (évite de sauver à 07h quand on clique 08h)
+    function toLocalISOString(dateObj) {
+      const tzOffsetMs = dateObj.getTimezoneOffset() * 60000;
+      const local = new Date(dateObj.getTime() - tzOffsetMs);
+      return local.toISOString().slice(0, 19); // yyyy-MM-ddTHH:mm:ss
+    }
+
     var calendar = new FullCalendar.Calendar(calendarEl, {
       schedulerLicenseKey: 'GPL-My-Project-Is-Open-Source', // Or your commercial license key
       locale: 'fr',
@@ -103,7 +110,7 @@
         updateEvent(info.event);
       },
       dateClick: function(info) {
-        clickedDateInput.value = info.date.toISOString();
+        clickedDateInput.value = toLocalISOString(info.date);
         var resId = info.resource ? info.resource.id : '';
         resourceIdInput.value = resId;
         if (resId) {
@@ -191,8 +198,8 @@
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          start: event.start.toISOString(),
-          end: event.end.toISOString(),
+          start: toLocalISOString(event.start),
+          end: event.end ? toLocalISOString(event.end) : null,
           resourceId: resourceId
         })
       }).then(response => {
@@ -203,6 +210,78 @@
         }
       });
     }
+
+    function updateEventDuration(event, durationMinutes) {
+      let resourceId = null;
+      if (event.getResources().length > 0) {
+        resourceId = event.getResources()[0].id;
+      }
+
+      fetch('/api/planning/events/' + event.id, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          start: toLocalISOString(event.start),
+          duration: durationMinutes,
+          resourceId: resourceId
+        })
+      }).then(response => {
+        if (!response.ok) {
+          alert('Erreur lors de la mise à jour');
+        } else {
+          calendar.refetchEvents();
+        }
+      });
+    }
+
+    function unscheduleEvent(event) {
+      fetch('/api/planning/events/' + event.id, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          start: null,
+          end: null,
+          resourceId: null
+        })
+      }).then(response => {
+        if (!response.ok) {
+          alert('Erreur lors de l\'annulation');
+        } else {
+          calendar.refetchEvents();
+        }
+      });
+    }
+
+    function minutesDiff(start, end) {
+      if (!start || !end) return null;
+      return Math.round((end - start) / 60000);
+    }
+
+    calendar.setOption('eventClick', function(info) {
+      var event = info.event;
+      var currentDuration = minutesDiff(event.start, event.end) || 60;
+      var action = prompt(
+        "Modifier ou annuler l'intervention :\n- Tapez une nouvelle durée (minutes)\n- Tapez 'supprimer' pour annuler\nDurée actuelle : " + currentDuration + " min",
+        currentDuration
+      );
+      if (action === null) return;
+      if (action.toLowerCase() === 'supprimer') {
+        if (confirm("Confirmer l'annulation de cette intervention ?")) {
+          unscheduleEvent(event);
+        }
+        return;
+      }
+      var parsed = parseInt(action, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        updateEventDuration(event, parsed);
+      } else {
+        alert('Entrée invalide.');
+      }
+    });
 
     loadResources();
   });
