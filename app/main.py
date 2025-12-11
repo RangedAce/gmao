@@ -1364,6 +1364,8 @@ def api_planning_events():
             resource_id = f"user_{ticket.assigned_user_id}"
         elif ticket.assigned_group_id:
             resource_id = f"group_{ticket.assigned_group_id}"
+        else:
+            resource_id = "unassigned"
 
         events.append({
             "id": ticket.id,
@@ -1388,7 +1390,7 @@ def api_planning_resources():
     if not user:
         return jsonify({"error": "Unauthorized"}), 401
 
-    resources = []
+    resources = [{"id": "unassigned", "title": "Non assigné"}]
     if user.role == "admin":
         groups = UserGroup.query.order_by(UserGroup.name).all()
         for group in groups:
@@ -1435,30 +1437,39 @@ def api_planning_update_event(ticket_id):
     if not can_modify:
         return jsonify({"error": "Forbidden"}), 403
 
-    data = request.get_json()
+    data = request.get_json() or {}
 
     try:
-        if "start" in data and data["start"]:
-            # FC sends ISO string with "Z" (UTC), but Python's fromisoformat
-            # doesn't like it before 3.11. On retire le Z.
-            start_str = data["start"].replace("Z", "")
-            ticket.start_datetime = datetime.fromisoformat(start_str)
+        if "start" in data:
+            if data["start"]:
+                # FC envoie de l'UTC avec un "Z". On retire le Z pour fromisoformat.
+                start_str = str(data["start"]).replace("Z", "")
+                ticket.start_datetime = datetime.fromisoformat(start_str)
+            else:
+                ticket.start_datetime = None
 
         if "duration" in data and data["duration"] and ticket.start_datetime:
             duration_minutes = int(data["duration"])
             ticket.end_datetime = ticket.start_datetime + timedelta(minutes=duration_minutes)
-        elif "end" in data and data["end"]:
-            end_str = data["end"].replace("Z", "")
-            ticket.end_datetime = datetime.fromisoformat(end_str)
+        elif "end" in data:
+            if data["end"]:
+                end_str = str(data["end"]).replace("Z", "")
+                ticket.end_datetime = datetime.fromisoformat(end_str)
+            else:
+                ticket.end_datetime = None
 
-        if "resourceId" in data and data["resourceId"]:
+        if "resourceId" in data:
             resource_id_str = data["resourceId"]
-            if resource_id_str.startswith("user_"):
-                ticket.assigned_user_id = int(resource_id_str.split("_")[1])
-                ticket.assigned_group_id = None
-            elif resource_id_str.startswith("group_"):
-                ticket.assigned_group_id = int(resource_id_str.split("_")[1])
+            if resource_id_str:
+                if resource_id_str.startswith("user_"):
+                    ticket.assigned_user_id = int(resource_id_str.split("_")[1])
+                    ticket.assigned_group_id = None
+                elif resource_id_str.startswith("group_"):
+                    ticket.assigned_group_id = int(resource_id_str.split("_")[1])
+                    ticket.assigned_user_id = None
+            else:
                 ticket.assigned_user_id = None
+                ticket.assigned_group_id = None
     except (ValueError, TypeError, AttributeError):
         # Erreur de format de date/valeur
         return jsonify({"error": "Invalid date or value format"}), 400
