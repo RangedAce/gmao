@@ -50,7 +50,10 @@
     </div>
 
     <div class="card">
-      <h2>Contrats de maintenance</h2>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Contrats de maintenance</h2>
+        <a class="btn" href="{{ url_for('maintenance_contract_new', client_id=client.id) }}">+ Ajouter</a>
+      </div>
       {% if maintenance_contracts %}
         <table>
           <tr>
@@ -63,6 +66,7 @@
             <th>Prix total</th>
             <th>Resilie</th>
             <th>Reconductible</th>
+            <th>Actions</th>
           </tr>
           {% for c in maintenance_contracts %}
             <tr>
@@ -75,6 +79,12 @@
               <td>{{ "%.2f"|format(c.prix_total) if c.prix_total is not none else "-" }}</td>
               <td>{{ "Oui" if c.resilie else "Non" }}</td>
               <td>{{ "Oui" if c.reconductible else "Non" }}</td>
+              <td>
+                <a class="btn small" href="{{ url_for('maintenance_contract_edit', contract_id=c.id) }}">Modifier</a>
+                <form method="post" action="{{ url_for('maintenance_contract_delete', contract_id=c.id) }}" style="display:inline;" onsubmit="return confirm('Supprimer ce contrat ?');">
+                  <button type="submit" class="btn danger small">Supprimer</button>
+                </form>
+              </td>
             </tr>
           {% endfor %}
         </table>
@@ -85,7 +95,10 @@
   </div>
 
   <div class="card">
-    <h2>Sites / agences</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2>Sites / agences</h2>
+      <a class="btn" href="{{ url_for('nouveau_site', client_id=client.id) }}">+ Ajouter</a>
+    </div>
     {% if client.sites %}
       <table>
         <tr>
@@ -93,6 +106,7 @@
           <th>Adresse</th>
           <th>Ville</th>
           <th>Notes</th>
+          <th>Actions</th>
         </tr>
         {% for s in client.sites %}
           <tr>
@@ -100,6 +114,12 @@
             <td>{{ s.adresse }}</td>
             <td>{{ s.ville }}</td>
             <td>{{ s.notes }}</td>
+            <td>
+              <a class="btn small" href="{{ url_for('edit_site', site_id=s.id) }}">Modifier</a>
+              <form method="post" action="{{ url_for('delete_site', site_id=s.id) }}" style="display:inline;" onsubmit="return confirm('Supprimer ce site ?');">
+                <button type="submit" class="btn danger small">Supprimer</button>
+              </form>
+            </td>
           </tr>
         {% endfor %}
       </table>

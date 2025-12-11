@@ -551,6 +551,70 @@ def client_fiche(id):
         maintenance_contracts=maintenance_contracts,
     )
 
+def _parse_date(value):
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+
+@app.route("/clients/<int:client_id>/contracts/new", methods=["GET", "POST"])
+def maintenance_contract_new(client_id):
+    client = Client.query.get_or_404(client_id)
+    if request.method == "POST":
+        numero = request.form.get("numero", "").strip()
+        if not numero:
+            return render_template("maintenance_contract_form.html", client=client, error="Numéro obligatoire")
+        c = MaintenanceContract(
+            client_id=client.id,
+            numero=numero,
+            duree=request.form.get("duree", "").strip() or None,
+            type_contrat=request.form.get("type_contrat", "").strip() or None,
+            date_effet=_parse_date(request.form.get("date_effet")),
+            date_renouvellement=_parse_date(request.form.get("date_renouvellement")),
+            conditions=request.form.get("conditions", "").strip() or None,
+            prix_total=float(request.form.get("prix_total")) if request.form.get("prix_total") else None,
+            resilie=bool(request.form.get("resilie")),
+            reconductible=bool(request.form.get("reconductible")),
+        )
+        db.session.add(c)
+        db.session.commit()
+        return redirect(url_for("client_fiche", id=client.id))
+    return render_template("maintenance_contract_form.html", client=client)
+
+
+@app.route("/contracts/<int:contract_id>/edit", methods=["GET", "POST"])
+def maintenance_contract_edit(contract_id):
+    contract = MaintenanceContract.query.get_or_404(contract_id)
+    client = contract.client
+    if request.method == "POST":
+        numero = request.form.get("numero", "").strip()
+        if not numero:
+            return render_template("maintenance_contract_form.html", client=client, contract=contract, error="Numéro obligatoire")
+        contract.numero = numero
+        contract.duree = request.form.get("duree", "").strip() or None
+        contract.type_contrat = request.form.get("type_contrat", "").strip() or None
+        contract.date_effet = _parse_date(request.form.get("date_effet"))
+        contract.date_renouvellement = _parse_date(request.form.get("date_renouvellement"))
+        contract.conditions = request.form.get("conditions", "").strip() or None
+        contract.prix_total = float(request.form.get("prix_total")) if request.form.get("prix_total") else None
+        contract.resilie = bool(request.form.get("resilie"))
+        contract.reconductible = bool(request.form.get("reconductible"))
+        db.session.commit()
+        return redirect(url_for("client_fiche", id=client.id))
+    return render_template("maintenance_contract_form.html", client=client, contract=contract)
+
+
+@app.route("/contracts/<int:contract_id>/delete", methods=["POST"])
+def maintenance_contract_delete(contract_id):
+    contract = MaintenanceContract.query.get_or_404(contract_id)
+    client_id = contract.client_id
+    db.session.delete(contract)
+    db.session.commit()
+    return redirect(url_for("client_fiche", id=client_id))
+
 @app.route("/clients/<int:client_id>/sites/nouveau", methods=["GET", "POST"])
 def nouveau_site(client_id):
     client = Client.query.get_or_404(client_id)
@@ -576,6 +640,32 @@ def nouveau_site(client_id):
         return redirect(url_for("client_fiche", id=client.id))
 
     return render_template("site_nouveau.html", client=client)
+
+
+@app.route("/sites/<int:site_id>/edit", methods=["GET", "POST"])
+def edit_site(site_id):
+    site = Site.query.get_or_404(site_id)
+    client = site.client
+    if request.method == "POST":
+        nom = request.form.get("nom", "").strip()
+        if not nom:
+            return render_template("site_edit.html", site=site, client=client, error="Le nom du site est obligatoire")
+        site.nom = nom
+        site.adresse = request.form.get("adresse", "").strip()
+        site.ville = request.form.get("ville", "").strip()
+        site.notes = request.form.get("notes", "").strip()
+        db.session.commit()
+        return redirect(url_for("client_fiche", id=client.id))
+    return render_template("site_edit.html", site=site, client=client)
+
+
+@app.route("/sites/<int:site_id>/delete", methods=["POST"])
+def delete_site(site_id):
+    site = Site.query.get_or_404(site_id)
+    client_id = site.client_id
+    db.session.delete(site)
+    db.session.commit()
+    return redirect(url_for("client_fiche", id=client_id))
 @app.route("/api/client/<int:client_id>/data")
 def api_client_data(client_id):
     # Vérifie que le client existe

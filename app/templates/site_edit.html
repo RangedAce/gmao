@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Modifier le site</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<nav>
+  <a href="/">Accueil</a>
+  <a href="/tickets">Tickets</a>
+  <a href="/materiels">Materiel</a>
+  <a href="/clients">Clients</a>
+</nav>
+
+<main>
+  <div class="card">
+    <h1>Modifier le site</h1>
+    <p>Client : <strong>{{ client.nom }}</strong></p>
+    {% if error %}<p style="color:red;">{{ error }}</p>{% endif %}
+    <form method="post">
+      <div class="form-row">
+        <div>
+          <label>Nom</label>
+          <input type="text" name="nom" value="{{ site.nom }}" required>
+        </div>
+        <div>
+          <label>Adresse</label>
+          <input type="text" name="adresse" value="{{ site.adresse }}">
+        </div>
+        <div>
+          <label>Ville</label>
+          <input type="text" name="ville" value="{{ site.ville }}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div style="width:100%;">
+          <label>Notes</label>
+          <textarea name="notes" rows="3">{{ site.notes }}</textarea>
+        </div>
+      </div>
+      <button type="submit">Enregistrer</button>
+      <a class="btn secondary" href="{{ url_for('client_fiche', id=client.id) }}">Annuler</a>
+    </form>
+  </div>
+</main>
+
+</body>
+</html>
