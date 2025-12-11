@@ -105,6 +105,10 @@
     var summaryEtat = document.getElementById('summary-etat');
     var summaryPriorite = document.getElementById('summary-priorite');
     var summaryDescription = document.getElementById('summary-description');
+    var summaryComment = document.createElement('div');
+    summaryComment.className = 'muted';
+    summaryComment.style.marginTop = '6px';
+    summaryDescription.parentNode.appendChild(summaryComment);
     var activeEvent = null;
 
     // Construit une ISO locale sans décalage (évite de sauver à 07h quand on clique 08h)
@@ -342,6 +346,9 @@
       summaryPriorite.textContent = props.priorite ? 'Priorité : ' + props.priorite : '';
       var desc = props.description || '';
       summaryDescription.textContent = desc ? ('Description : ' + desc) : '';
+      var commentTxt = props.last_comment ? ('Dernier commentaire : ' + props.last_comment) : 'Dernier commentaire : aucun';
+      var commentMeta = props.last_comment_user ? (' (' + props.last_comment_user + ')') : '';
+      summaryComment.textContent = commentTxt + commentMeta;
       openTicketBtn.onclick = function() {
         if (props.url) {
           window.location.href = props.url;

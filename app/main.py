@@ -1356,7 +1356,13 @@ def api_planning_events():
             color = "#" + hex(hash(ticket.assigned_group_id or ticket.assigned_user_id) % 16777215)[2:].zfill(6)
         else:
             color = "#457eac"
-        
+
+        latest_comment = (
+            TicketComment.query.filter_by(ticket_id=ticket.id)
+            .order_by(TicketComment.created_at.desc())
+            .first()
+        )
+
         title = f"#{ticket.id} {ticket.titre}"
         if ticket.assigned_user:
             title += f" ({ticket.assigned_user.full_name})"
@@ -1388,6 +1394,9 @@ def api_planning_events():
                 "priorite": ticket.priorite,
                 "description": ticket.description,
                 "url": url_for("ticket_fiche", id=ticket.id),
+                "last_comment": latest_comment.content if latest_comment else "",
+                "last_comment_user": latest_comment.user.full_name if latest_comment else "",
+                "last_comment_date": latest_comment.created_at.isoformat() if latest_comment else "",
             }
         })
 
