@@ -66,8 +66,9 @@
         <div id="summary-etat" class="muted" style="margin-bottom: 4px;"></div>
         <div id="summary-priorite" class="muted" style="margin-bottom: 4px;"></div>
         <div id="summary-description" class="muted" style="margin-top: 6px; line-height: 1.4;"></div>
-        <div class="form-actions" style="margin-top: 10px; gap: 6px;">
-          <button type="button" id="open-ticket" class="btn secondary">Ouvrir le ticket</button>
+        <div id="summary-comment" class="muted" style="margin-top: 10px; line-height: 1.4;"></div>
+        <div class="form-actions" style="margin-top: 12px; gap: 8px;">
+          <button type="button" id="open-ticket" class="btn">Ouvrir le ticket</button>
         </div>
       </div>
       <div class="form-group">
@@ -105,10 +106,7 @@
     var summaryEtat = document.getElementById('summary-etat');
     var summaryPriorite = document.getElementById('summary-priorite');
     var summaryDescription = document.getElementById('summary-description');
-    var summaryComment = document.createElement('div');
-    summaryComment.className = 'muted';
-    summaryComment.style.marginTop = '6px';
-    summaryDescription.parentNode.appendChild(summaryComment);
+    var summaryComment = document.getElementById('summary-comment');
     var activeEvent = null;
 
     // Construit une ISO locale sans décalage (évite de sauver à 07h quand on clique 08h)
