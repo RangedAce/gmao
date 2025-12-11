@@ -1198,7 +1198,13 @@ def ticket_edit(id):
 
 @app.route("/planning")
 def planning():
-    return render_template("planning.html")
+    # Récupération des tickets non planifiés pour le menu d'assignation
+    unscheduled_tickets = Ticket.query.filter(
+        Ticket.etat != "cloture",
+        Ticket.etat != "resolu",
+        or_(Ticket.start_datetime.is_(None), Ticket.end_datetime.is_(None))
+    ).order_by(Ticket.id.desc()).all()
+    return render_template("planning.html", unscheduled_tickets=unscheduled_tickets)
 
 
 
@@ -1434,7 +1440,10 @@ def api_planning_update_event(ticket_id):
     try:
         if "start" in data:
             ticket.start_datetime = datetime.fromisoformat(data["start"])
-        if "end" in data:
+        
+        if "duration" in data and ticket.start_datetime:
+            ticket.end_datetime = ticket.start_datetime + timedelta(minutes=int(data["duration"]))
+        elif "end" in data:
             ticket.end_datetime = datetime.fromisoformat(data["end"])
         if "resourceId" in data:
             resource_id_str = data["resourceId"]
