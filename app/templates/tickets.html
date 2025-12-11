@@ -1,179 +1,159 @@
-<!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <title>Tickets</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
 
-<nav>
-  <a href="/">Accueil</a>
-  <a href="/tickets">Tickets</a>
-  <a href="/materiels">Materiel</a>
-  <a href="/clients">Clients</a>
-  <span class="right">
-    {% if current_user %}
-      <a href="/me/password">Mon profil</a>
-      {% if is_admin %} | <a href="/users">Gerer utilisateurs & groupes</a>{% endif %}
-      | {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
-    {% else %}
-      <a href="/login">Connexion</a>
-    {% endif %}
-  </span>
-</nav>
+{% block title %}Tickets{% endblock %}
 
-<main>
-  <div class="card">
-    <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px;">
-      <h1>Tickets</h1>
-      <a class="btn" href="/tickets/nouveau">+ Nouveau ticket</a>
-    </div>
-
-    <div class="mt-2">
-      <form method="get">
-        <div class="form-row">
-          <div>
-            <label for="client_id">Client</label>
-            <select name="client_id" id="client_id">
-              <option value="">Tous</option>
-              {% for c in clients %}
-              <option value="{{ c.id }}" {% if filters.client_id and filters.client_id == c.id %}selected{% endif %}>{{ c.nom }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div>
-            <label for="client_nom">Nom client</label>
-            <input type="text" name="client_nom" id="client_nom" placeholder="Rechercher un client" value="{{ filters.client_nom }}">
-          </div>
-          <div>
-            <label for="materiel_type_id">Type materiel</label>
-            <select name="materiel_type_id" id="materiel_type_id">
-              <option value="">Tous</option>
-              {% for mt in materiel_types %}
-              <option value="{{ mt.id }}" {% if filters.materiel_type_id and filters.materiel_type_id == mt.id %}selected{% endif %}>{{ mt.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div>
-            <label for="materiel_search">Materiel (texte)</label>
-            <input type="text" name="materiel_search" id="materiel_search" placeholder="Type, modele ou serie" value="{{ filters.materiel_search }}">
-          </div>
-        </div>
-
-        <div class="form-row mt-1">
-          <div>
-            <label for="titre">Titre</label>
-            <input type="text" name="titre" id="titre" value="{{ filters.titre }}" placeholder="Titre du ticket">
-          </div>
-          <div>
-            <label for="type">Type</label>
-            <select name="type" id="type">
-              <option value="">Tous</option>
-              <option value="incident" {% if filters.type == "incident" %}selected{% endif %}>Incident</option>
-              <option value="demande" {% if filters.type == "demande" %}selected{% endif %}>Demande</option>
-            </select>
-          </div>
-          <div>
-            <label for="priorite">Priorite</label>
-            <select name="priorite" id="priorite">
-              <option value="">Toutes</option>
-              <option value="basse" {% if filters.priorite == "basse" %}selected{% endif %}>Basse</option>
-              <option value="normale" {% if filters.priorite == "normale" %}selected{% endif %}>Normale</option>
-              <option value="haute" {% if filters.priorite == "haute" %}selected{% endif %}>Haute</option>
-            </select>
-          </div>
-          <div>
-            <label for="etat">Etat</label>
-            <select name="etat" id="etat">
-              <option value="">Tous</option>
-              <option value="ouvert" {% if filters.etat == "ouvert" %}selected{% endif %}>Ouvert</option>
-              <option value="en_cours" {% if filters.etat == "en_cours" %}selected{% endif %}>En cours</option>
-              <option value="resolu" {% if filters.etat == "resolu" %}selected{% endif %}>Resolu</option>
-              <option value="cloture" {% if filters.etat == "cloture" %}selected{% endif %}>Cloture</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row mt-1">
-          <div>
-            <label for="date_debut">Ouvert du</label>
-            <input type="date" name="date_debut" id="date_debut" value="{{ filters.date_debut }}">
-          </div>
-          <div>
-            <label for="date_fin">au</label>
-            <input type="date" name="date_fin" id="date_fin" value="{{ filters.date_fin }}">
-          </div>
-          <div>
-            <label for="sort">Trier par</label>
-            <select name="sort" id="sort">
-              <option value="date_desc" {% if sort == "date_desc" %}selected{% endif %}>Date ouverture (recents)</option>
-              <option value="date_asc" {% if sort == "date_asc" %}selected{% endif %}>Date ouverture (anciens)</option>
-              <option value="client" {% if sort == "client" %}selected{% endif %}>Client</option>
-              <option value="titre" {% if sort == "titre" %}selected{% endif %}>Titre</option>
-              <option value="type" {% if sort == "type" %}selected{% endif %}>Type</option>
-              <option value="priorite" {% if sort == "priorite" %}selected{% endif %}>Priorite</option>
-              <option value="etat" {% if sort == "etat" %}selected{% endif %}>Etat</option>
-              <option value="materiel" {% if sort == "materiel" %}selected{% endif %}>Type materiel</option>
-            </select>
-          </div>
-          <div style="display:flex; align-items:flex-end; gap:10px;">
-            <button type="submit">Filtrer / Trier</button>
-            <a class="btn secondary" href="/tickets">Reinitialiser</a>
-          </div>
-        </div>
-      </form>
-    </div>
+{% block content %}
+<div class="card">
+  <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px;">
+    <h1>Tickets</h1>
+    <a class="btn" href="/tickets/nouveau">+ Nouveau ticket</a>
   </div>
 
-  <div class="card">
-    <div class="table-toolbar">
-      <button type="button" class="col-menu-btn" id="ticket-menu-btn">☰ Colonnes</button>
-      <div class="col-menu" id="ticket-menu"></div>
-    </div>
+  <div class="mt-2">
+    <form method="get">
+      <div class="form-row">
+        <div>
+          <label for="client_id">Client</label>
+          <select name="client_id" id="client_id">
+            <option value="">Tous</option>
+            {% for c in clients %}
+            <option value="{{ c.id }}" {% if filters.client_id and filters.client_id == c.id %}selected{% endif %}>{{ c.nom }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="client_nom">Nom client</label>
+          <input type="text" name="client_nom" id="client_nom" placeholder="Rechercher un client" value="{{ filters.client_nom }}">
+        </div>
+        <div>
+          <label for="materiel_type_id">Type materiel</label>
+          <select name="materiel_type_id" id="materiel_type_id">
+            <option value="">Tous</option>
+            {% for mt in materiel_types %}
+            <option value="{{ mt.id }}" {% if filters.materiel_type_id and filters.materiel_type_id == mt.id %}selected{% endif %}>{{ mt.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="materiel_search">Materiel (texte)</label>
+          <input type="text" name="materiel_search" id="materiel_search" placeholder="Type, modele ou serie" value="{{ filters.materiel_search }}">
+        </div>
+      </div>
 
-    <table id="tickets-table">
-      <thead>
-        <tr id="tickets-head"></tr>
-      </thead>
-      <tbody id="tickets-body">
-      {% for t in tickets %}
-        <tr>
-          <td data-col="id"><a href="/tickets/{{ t.id }}">{{ t.id }}</a></td>
-          <td data-col="titre">{{ t.titre }}</td>
-          <td data-col="client">CLT-{{ "%04d"|format(t.client.id) }} - {{ t.client.nom }}</td>
-          <td data-col="materiel">
-            {% if t.materiels %}
-              {% for m in t.materiels %}
-                {{ m.type }} {{ m.modele }} ({{ m.numero_serie }}){% if not loop.last %}, {% endif %}
-              {% endfor %}
-            {% else %}
-              -
-            {% endif %}
-          </td>
-          <td data-col="type">{{ t.type }}</td>
-          <td data-col="priorite">{{ t.priorite }}</td>
-          <td data-col="assignee">
-            {% if t.assigned_group %}
-              Groupe {{ t.assigned_group.name }}
-            {% elif t.assigned_user %}
-              {{ t.assigned_user.full_name }}
-            {% else %}
-              Non assigné
-            {% endif %}
-          </td>
-          <td data-col="categorie">{{ t.category.name if t.category else "-" }}</td>
-          <td data-col="type_materiel">{{ t.materiel_type.name if t.materiel_type else "-" }}</td>
-        <td data-col="etat">{{ t.etat }}</td>
-        <td data-col="ouverture">{{ t.date_ouverture.strftime("%d/%m/%Y %H:%M") }}</td>
-          <td data-col="description" class="ellipsis-cell" data-full="{{ t.description or '-' }}" title="{{ t.description or '-' }}">{{ t.description or "-" }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+      <div class="form-row mt-1">
+        <div>
+          <label for="titre">Titre</label>
+          <input type="text" name="titre" id="titre" value="{{ filters.titre }}" placeholder="Titre du ticket">
+        </div>
+        <div>
+          <label for="type">Type</label>
+          <select name="type" id="type">
+            <option value="">Tous</option>
+            <option value="incident" {% if filters.type == "incident" %}selected{% endif %}>Incident</option>
+            <option value="demande" {% if filters.type == "demande" %}selected{% endif %}>Demande</option>
+          </select>
+        </div>
+        <div>
+          <label for="priorite">Priorite</label>
+          <select name="priorite" id="priorite">
+            <option value="">Toutes</option>
+            <option value="basse" {% if filters.priorite == "basse" %}selected{% endif %}>Basse</option>
+            <option value="normale" {% if filters.priorite == "normale" %}selected{% endif %}>Normale</option>
+            <option value="haute" {% if filters.priorite == "haute" %}selected{% endif %}>Haute</option>
+          </select>
+        </div>
+        <div>
+          <label for="etat">Etat</label>
+          <select name="etat" id="etat">
+            <option value="">Tous</option>
+            <option value="ouvert" {% if filters.etat == "ouvert" %}selected{% endif %}>Ouvert</option>
+            <option value="en_cours" {% if filters.etat == "en_cours" %}selected{% endif %}>En cours</option>
+            <option value="resolu" {% if filters.etat == "resolu" %}selected{% endif %}>Resolu</option>
+            <option value="cloture" {% if filters.etat == "cloture" %}selected{% endif %}>Cloture</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row mt-1">
+        <div>
+          <label for="date_debut">Ouvert du</label>
+          <input type="date" name="date_debut" id="date_debut" value="{{ filters.date_debut }}">
+        </div>
+        <div>
+          <label for="date_fin">au</label>
+          <input type="date" name="date_fin" id="date_fin" value="{{ filters.date_fin }}">
+        </div>
+        <div>
+          <label for="sort">Trier par</label>
+          <select name="sort" id="sort">
+            <option value="date_desc" {% if sort == "date_desc" %}selected{% endif %}>Date ouverture (recents)</option>
+            <option value="date_asc" {% if sort == "date_asc" %}selected{% endif %}>Date ouverture (anciens)</option>
+            <option value="client" {% if sort == "client" %}selected{% endif %}>Client</option>
+            <option value="titre" {% if sort == "titre" %}selected{% endif %}>Titre</option>
+            <option value="type" {% if sort == "type" %}selected{% endif %}>Type</option>
+            <option value="priorite" {% if sort == "priorite" %}selected{% endif %}>Priorite</option>
+            <option value="etat" {% if sort == "etat" %}selected{% endif %}>Etat</option>
+            <option value="materiel" {% if sort == "materiel" %}selected{% endif %}>Type materiel</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:flex-end; gap:10px;">
+          <button type="submit">Filtrer / Trier</button>
+          <a class="btn secondary" href="/tickets">Reinitialiser</a>
+        </div>
+      </div>
+    </form>
   </div>
-</main>
+</div>
 
+<div class="card">
+  <div class="table-toolbar">
+    <button type="button" class="col-menu-btn" id="ticket-menu-btn">☰ Colonnes</button>
+    <div class="col-menu" id="ticket-menu"></div>
+  </div>
+
+  <table id="tickets-table">
+    <thead>
+      <tr id="tickets-head"></tr>
+    </thead>
+    <tbody id="tickets-body">
+    {% for t in tickets %}
+      <tr>
+        <td data-col="id"><a href="/tickets/{{ t.id }}">{{ t.id }}</a></td>
+        <td data-col="titre">{{ t.titre }}</td>
+        <td data-col="client">CLT-{{ "%04d"|format(t.client.id) }} - {{ t.client.nom }}</td>
+        <td data-col="materiel">
+          {% if t.materiels %}
+            {% for m in t.materiels %}
+              {{ m.type }} {{ m.modele }} ({{ m.numero_serie }}){% if not loop.last %}, {% endif %}
+            {% endfor %}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td data-col="type">{{ t.type }}</td>
+        <td data-col="priorite">{{ t.priorite }}</td>
+        <td data-col="assignee">
+          {% if t.assigned_group %}
+            Groupe {{ t.assigned_group.name }}
+          {% elif t.assigned_user %}
+            {{ t.assigned_user.full_name }}
+          {% else %}
+            Non assigné
+          {% endif %}
+        </td>
+        <td data-col="categorie">{{ t.category.name if t.category else "-" }}</td>
+        <td data-col="type_materiel">{{ t.materiel_type.name if t.materiel_type else "-" }}</td>
+      <td data-col="etat">{{ t.etat }}</td>
+      <td data-col="ouverture">{{ t.date_ouverture.strftime("%d/%m/%Y %H:%M") }}</td>
+        <td data-col="description" class="ellipsis-cell" data-full="{{ t.description or '-' }}" title="{{ t.description or '-' }}">{{ t.description or "-" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
   const availableCols = {
     id: "ID",
@@ -352,6 +332,4 @@
     });
   });
 </script>
-
-</body>
-</html>
+{% endblock %}

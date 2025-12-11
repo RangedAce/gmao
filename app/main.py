@@ -180,6 +180,8 @@ class Ticket(db.Model):
 
     date_ouverture = db.Column(db.DateTime, default=datetime.now)
     date_cloture = db.Column(db.DateTime, nullable=True)
+    start_datetime = db.Column(db.DateTime, nullable=True)
+    end_datetime = db.Column(db.DateTime, nullable=True)
 
     client = db.relationship("Client")
     category = db.relationship("MaterielCategory")
@@ -344,6 +346,8 @@ def ensure_schema():
                 ("materiel_type_id", "INTEGER REFERENCES materiel_types(id)"),
                 ("assigned_user_id", "INTEGER REFERENCES users(id)"),
                 ("assigned_group_id", "INTEGER REFERENCES user_groups(id)"),
+                ("start_datetime", "TIMESTAMP WITHOUT TIME ZONE"),
+                ("end_datetime", "TIMESTAMP WITHOUT TIME ZONE"),
             ],
             "clients": [
                 ("contract_type", "VARCHAR(32) NOT NULL DEFAULT 'none'"),
@@ -1186,6 +1190,12 @@ def ticket_edit(id):
     )
 
 
+@app.route("/planning")
+def planning():
+    return render_template("planning.html")
+
+
+
 # ==========================
 #  UTILISATEURS / PROFIL
 # ==========================
@@ -1284,6 +1294,154 @@ def change_password():
             success = True
 
     return render_template("change_password.html", error=error, success=success)
+
+
+# ==========================
+#  PLANNING API
+# ==========================
+@app.route("/api/planning/events")
+def api_planning_events():
+    user = _get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    start_str = request.args.get("start")
+    end_str = request.args.get("end")
+
+    try:
+        start_date = datetime.fromisoformat(start_str.split('T')[0])
+        end_date = datetime.fromisoformat(end_str.split('T')[0])
+    except (ValueError, AttributeError):
+        return jsonify({"error": "Invalid start or end date"}), 400
+
+    query = Ticket.query.filter(
+        Ticket.start_datetime.isnot(None),
+        Ticket.end_datetime.isnot(None),
+        Ticket.start_datetime <= end_date,
+        Ticket.end_datetime >= start_date,
+    )
+
+    if user.role != "admin":
+        user_group_ids = [g.id for g in user.groups]
+        
+        # Find all users in the same groups as the current user
+        users_in_same_groups_query = db.session.query(UserGroupMember.user_id).filter(UserGroupMember.group_id.in_(user_group_ids))
+        users_in_same_groups_ids = [u[0] for u in users_in_same_groups_query]
+
+        query = query.filter(
+            or_(
+                Ticket.assigned_user_id.in_(users_in_same_groups_ids),
+                Ticket.assigned_group_id.in_(user_group_ids)
+            )
+        )
+
+    tickets = query.all()
+
+    events = []
+    for ticket in tickets:
+        color = "#" + hex(hash(ticket.assigned_group_id or ticket.assigned_user_id or 0) % 16777215)[2:].zfill(6)
+        
+        title = f"#{ticket.id} {ticket.titre}"
+        if ticket.assigned_user:
+            title += f" ({ticket.assigned_user.full_name})"
+        elif ticket.assigned_group:
+            title += f" ({ticket.assigned_group.name})"
+
+        resource_id = None
+        if ticket.assigned_user_id:
+            resource_id = f"user_{ticket.assigned_user_id}"
+        elif ticket.assigned_group_id:
+            resource_id = f"group_{ticket.assigned_group_id}"
+
+        events.append({
+            "id": ticket.id,
+            "resourceId": resource_id,
+            "title": title,
+            "start": ticket.start_datetime.isoformat(),
+            "end": ticket.end_datetime.isoformat(),
+            "backgroundColor": color,
+            "borderColor": color,
+            "extendedProps": {
+                "client": ticket.client.nom,
+                "user": ticket.assigned_user.full_name if ticket.assigned_user else None,
+                "group": ticket.assigned_group.name if ticket.assigned_group else None,
+            }
+        })
+
+    return jsonify(events)
+
+@app.route("/api/planning/resources")
+def api_planning_resources():
+    user = _get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    resources = []
+    if user.role == "admin":
+        groups = UserGroup.query.order_by(UserGroup.name).all()
+        for group in groups:
+            resources.append({"id": f"group_{group.id}", "title": group.name})
+
+        users = User.query.order_by(User.full_name).all()
+        for u in users:
+            resources.append({"id": f"user_{u.id}", "title": u.full_name})
+    else:
+        user_group_ids = [g.id for g in user.groups]
+        groups = UserGroup.query.filter(UserGroup.id.in_(user_group_ids)).order_by(UserGroup.name).all()
+        for group in groups:
+            resources.append({"id": f"group_{group.id}", "title": group.name})
+
+        users_in_same_groups_query = db.session.query(User.id, User.full_name).join(UserGroupMember).filter(UserGroupMember.group_id.in_(user_group_ids)).distinct()
+        for user_id, user_name in users_in_same_groups_query:
+            resources.append({"id": f"user_{user_id}", "title": user_name})
+            
+    return jsonify(resources)
+
+
+@app.route("/api/planning/events/<int:ticket_id>", methods=["PUT"])
+def api_planning_update_event(ticket_id):
+    user = _get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    ticket = Ticket.query.get_or_404(ticket_id)
+    
+    # Basic permission check: user can only modify tickets they can see
+    can_modify = False
+    if user.role == "admin":
+        can_modify = True
+    else:
+        user_group_ids = [g.id for g in user.groups]
+        if ticket.assigned_group_id in user_group_ids:
+            can_modify = True
+        elif ticket.assigned_user:
+            # Check if assigned user is in one of the current user's groups
+            assigned_user_groups = [g.id for g in ticket.assigned_user.groups]
+            if any(gid in user_group_ids for gid in assigned_user_groups):
+                can_modify = True
+
+    if not can_modify:
+        return jsonify({"error": "Forbidden"}), 403
+
+    data = request.get_json()
+
+    try:
+        if "start" in data:
+            ticket.start_datetime = datetime.fromisoformat(data["start"])
+        if "end" in data:
+            ticket.end_datetime = datetime.fromisoformat(data["end"])
+        if "resourceId" in data:
+            resource_id_str = data["resourceId"]
+            if resource_id_str.startswith("user_"):
+                ticket.assigned_user_id = int(resource_id_str.split("_")[1])
+                ticket.assigned_group_id = None
+            elif resource_id_str.startswith("group_"):
+                ticket.assigned_group_id = int(resource_id_str.split("_")[1])
+                ticket.assigned_user_id = None
+    except (ValueError, AttributeError):
+
+    db.session.commit()
+    return jsonify({"status": "success"})
 
 
 # ==========================

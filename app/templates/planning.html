@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Planning{% endblock %}
+
+{% block head %}
+  <!--
+  FullCalendar resource views are premium plugins.
+  You need a license to use them in production.
+  See https://fullcalendar.io/pricing
+  -->
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar-scheduler@6.1.11/index.global.min.js'></script>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>Planning</h1>
+  <div id='calendar'></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      schedulerLicenseKey: 'GPL-My-Project-Is-Open-Source', // Or your commercial license key
+      initialView: 'resourceTimeGridWeek',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'resourceTimeGridWeek,resourceTimeGridDay,dayGridMonth'
+      },
+      events: '/api/planning/events',
+      resources: '/api/planning/resources',
+      editable: true,
+      eventDrop: function(info) {
+        updateEvent(info.event);
+      },
+      eventResize: function(info) {
+        updateEvent(info.event);
+      }
+    });
+    calendar.render();
+
+    function updateEvent(event) {
+      let resourceId = null;
+      if (event.getResources().length > 0) {
+        resourceId = event.getResources()[0].id;
+      }
+
+      fetch('/api/planning/events/' + event.id, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          start: event.start.toISOString(),
+          end: event.end.toISOString(),
+          resourceId: resourceId
+        })
+      }).then(response => {
+        if (!response.ok) {
+          alert('Error updating event');
+          // In a real app, you'd want to revert the change on failure
+          // info.revert(); 
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}
