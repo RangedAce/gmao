@@ -334,10 +334,13 @@
 
     function attachDescriptionHandlers() {
       document.querySelectorAll(".ellipsis-cell").forEach(cell => {
+        const text = cell.getAttribute("data-full") || "";
+        // mouseover tooltip handled by CSS; add sticky popup on click
         cell.addEventListener("click", (e) => {
           e.stopPropagation();
           document.querySelectorAll(".ellipsis-cell.sticky-popup").forEach(el => el.classList.remove("sticky-popup"));
           cell.classList.add("sticky-popup");
+          cell.setAttribute("data-full", text);
         });
       });
       document.addEventListener("click", () => {
