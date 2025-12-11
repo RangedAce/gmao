@@ -9,11 +9,11 @@
 <body>
 
 <nav>
-  <a href="/">Accueil</a>
-  <a href="/tickets">Tickets</a>
-  <a href="/materiels">Materiel</a>
-  <a href="/clients">Clients</a>
-  <a href="/planning" class="planning-link">Planning</a>
+  <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Accueil</a>
+  <a href="/tickets" class="nav-link {% if request.path.startswith('/tickets') %}active{% endif %}">Tickets</a>
+  <a href="/materiels" class="nav-link {% if request.path.startswith('/materiels') %}active{% endif %}">Materiel</a>
+  <a href="/clients" class="nav-link {% if request.path.startswith('/clients') %}active{% endif %}">Clients</a>
+  <a href="/planning" class="nav-link {% if request.path.startswith('/planning') %}active{% endif %}">Planning</a>
   <span class="right">
     {% if current_user %}
       <a href="/me/password">Mon profil</a>

@@ -62,17 +62,9 @@ nav a:hover {
   color: #fff;
 }
 
-.planning-link {
-  background: linear-gradient(135deg, var(--steel-blue), var(--baltic-blue));
+.nav-link.active {
+  background: rgba(194,175,240,0.22);
   border: 1px solid var(--border);
-  color: #fff;
-  padding: 8px 14px;
-  border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
-}
-
-.planning-link:hover {
-  background: linear-gradient(135deg, var(--soft-periwinkle), var(--steel-blue));
   color: #fff;
 }
 
