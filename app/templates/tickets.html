@@ -193,6 +193,25 @@
   const defaultOrder = ["id","titre","client","materiel","type","priorite","assignee","categorie","type_materiel","etat","ouverture"];
   const storageKey = "tickets_columns_state_v2";
 
+  let descriptionDocHandlerBound = false;
+  function attachDescriptionHandlers() {
+    document.querySelectorAll(".ellipsis-cell").forEach(cell => {
+      const text = cell.getAttribute("data-full") || "";
+      cell.addEventListener("click", (e) => {
+        e.stopPropagation();
+        document.querySelectorAll(".ellipsis-cell.sticky-popup").forEach(el => el.classList.remove("sticky-popup"));
+        cell.classList.add("sticky-popup");
+        cell.setAttribute("data-full", text);
+      });
+    });
+    if (!descriptionDocHandlerBound) {
+      document.addEventListener("click", () => {
+        document.querySelectorAll(".ellipsis-cell.sticky-popup").forEach(el => el.classList.remove("sticky-popup"));
+      });
+      descriptionDocHandlerBound = true;
+    }
+  }
+
   function loadState() {
     const stored = localStorage.getItem(storageKey);
     if (!stored) return { order:[...defaultOrder], visible:new Set(defaultOrder), locked:false };
@@ -331,23 +350,6 @@
       buildMenu(state.order, state.visible, state.locked);
       dragCol = null;
     });
-
-    function attachDescriptionHandlers() {
-      document.querySelectorAll(".ellipsis-cell").forEach(cell => {
-        const text = cell.getAttribute("data-full") || "";
-        // mouseover tooltip handled by CSS; add sticky popup on click
-        cell.addEventListener("click", (e) => {
-          e.stopPropagation();
-          document.querySelectorAll(".ellipsis-cell.sticky-popup").forEach(el => el.classList.remove("sticky-popup"));
-          cell.classList.add("sticky-popup");
-          cell.setAttribute("data-full", text);
-        });
-      });
-      document.addEventListener("click", () => {
-        document.querySelectorAll(".ellipsis-cell.sticky-popup").forEach(el => el.classList.remove("sticky-popup"));
-      });
-    }
-    attachDescriptionHandlers();
   });
 </script>
 
