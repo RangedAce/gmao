@@ -53,18 +53,40 @@
     </form>
   </div>
 </div>
+
+<div id="edit-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <span class="close-button">&times;</span>
+    <h2>Modifier l'intervention</h2>
+    <form id="edit-form">
+      <div class="form-group">
+        <label for="edit-duration-input">Durée (minutes)</label>
+        <input type="number" id="edit-duration-input" min="15" step="15" value="60" required>
+      </div>
+      <div class="form-actions">
+        <button type="submit">Mettre à jour</button>
+        <button type="button" id="delete-event" class="btn secondary">Supprimer</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
-    var modal = document.getElementById('assign-modal');
-    var closeButton = document.querySelector('.close-button');
+    var assignModal = document.getElementById('assign-modal');
+    var editModal = document.getElementById('edit-modal');
+    var closeButtons = document.querySelectorAll('.close-button');
     var assignForm = document.getElementById('assign-form');
+    var editForm = document.getElementById('edit-form');
     var clickedDateInput = document.getElementById('clicked-date');
     var resourceIdInput = document.getElementById('resource-id');
     var resourceSelect = document.getElementById('resource-select');
+    var editDurationInput = document.getElementById('edit-duration-input');
+    var deleteEventBtn = document.getElementById('delete-event');
+    var activeEvent = null;
 
     // Construit une ISO locale sans décalage (évite de sauver à 07h quand on clique 08h)
     function toLocalISOString(dateObj) {
@@ -118,18 +140,22 @@
         } else {
           resourceSelect.value = '';
         }
-        modal.style.display = 'block';
+        assignModal.style.display = 'block';
       }
     });
     calendar.render();
 
-    closeButton.onclick = function() {
-      modal.style.display = 'none';
-    }
+    closeButtons.forEach(function(btn) {
+      btn.onclick = function() {
+        assignModal.style.display = 'none';
+        editModal.style.display = 'none';
+      };
+    });
 
     window.onclick = function(event) {
-      if (event.target == modal) {
-        modal.style.display = 'none';
+      if (event.target == assignModal || event.target == editModal) {
+        assignModal.style.display = 'none';
+        editModal.style.display = 'none';
       }
     }
 
@@ -163,7 +189,7 @@
         if (!response.ok) {
           alert("Erreur lors de l'assignation du ticket");
         } else {
-          modal.style.display = 'none';
+          assignModal.style.display = 'none';
           calendar.refetchEvents();
         }
       });
@@ -231,6 +257,7 @@
         if (!response.ok) {
           alert('Erreur lors de la mise à jour');
         } else {
+          editModal.style.display = 'none';
           calendar.refetchEvents();
         }
       });
@@ -251,6 +278,7 @@
         if (!response.ok) {
           alert('Erreur lors de l\'annulation');
         } else {
+          editModal.style.display = 'none';
           calendar.refetchEvents();
         }
       });
@@ -262,26 +290,29 @@
     }
 
     calendar.setOption('eventClick', function(info) {
-      var event = info.event;
-      var currentDuration = minutesDiff(event.start, event.end) || 60;
-      var action = prompt(
-        "Modifier ou annuler l'intervention :\n- Tapez une nouvelle durée (minutes)\n- Tapez 'supprimer' pour annuler\nDurée actuelle : " + currentDuration + " min",
-        currentDuration
-      );
-      if (action === null) return;
-      if (action.toLowerCase() === 'supprimer') {
-        if (confirm("Confirmer l'annulation de cette intervention ?")) {
-          unscheduleEvent(event);
-        }
-        return;
-      }
-      var parsed = parseInt(action, 10);
+      activeEvent = info.event;
+      var currentDuration = minutesDiff(activeEvent.start, activeEvent.end) || 60;
+      editDurationInput.value = currentDuration;
+      editModal.style.display = 'block';
+    });
+
+    editForm.onsubmit = function(e) {
+      e.preventDefault();
+      if (!activeEvent) return;
+      var parsed = parseInt(editDurationInput.value, 10);
       if (!isNaN(parsed) && parsed > 0) {
-        updateEventDuration(event, parsed);
+        updateEventDuration(activeEvent, parsed);
       } else {
         alert('Entrée invalide.');
       }
-    });
+    };
+
+    deleteEventBtn.onclick = function() {
+      if (!activeEvent) return;
+      if (confirm("Confirmer l'annulation de cette intervention ?")) {
+        unscheduleEvent(activeEvent);
+      }
+    };
 
     loadResources();
   });
