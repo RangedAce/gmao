@@ -567,6 +567,9 @@ def maintenance_contract_new(client_id):
         numero = request.form.get("numero", "").strip()
         if not numero:
             return render_template("maintenance_contract_form.html", client=client, error="Numéro obligatoire")
+        existing = MaintenanceContract.query.filter_by(client_id=client.id, numero=numero).first()
+        if existing:
+            return render_template("maintenance_contract_form.html", client=client, error="Ce numéro de contrat existe déjà pour ce client.")
         c = MaintenanceContract(
             client_id=client.id,
             numero=numero,
@@ -593,6 +596,9 @@ def maintenance_contract_edit(contract_id):
         numero = request.form.get("numero", "").strip()
         if not numero:
             return render_template("maintenance_contract_form.html", client=client, contract=contract, error="Numéro obligatoire")
+        existing = MaintenanceContract.query.filter_by(client_id=client.id, numero=numero).first()
+        if existing and existing.id != contract.id:
+            return render_template("maintenance_contract_form.html", client=client, contract=contract, error="Ce numéro de contrat existe déjà pour ce client.")
         contract.numero = numero
         contract.duree = request.form.get("duree", "").strip() or None
         contract.type_contrat = request.form.get("type_contrat", "").strip() or None

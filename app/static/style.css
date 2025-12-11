@@ -278,3 +278,8 @@ form .form-row {
   cursor: pointer;
   font-weight: 700;
 }
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}

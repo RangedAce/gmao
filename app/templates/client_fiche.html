@@ -55,39 +55,41 @@
         <a class="btn" href="{{ url_for('maintenance_contract_new', client_id=client.id) }}">+ Ajouter</a>
       </div>
       {% if maintenance_contracts %}
-        <table>
-          <tr>
-            <th>No contrat</th>
-            <th>Duree</th>
-            <th>Type</th>
-            <th>Date effet</th>
-            <th>Date renouvellement</th>
-            <th>Conditions</th>
-            <th>Prix total</th>
-            <th>Resilie</th>
-            <th>Reconductible</th>
-            <th>Actions</th>
-          </tr>
-          {% for c in maintenance_contracts %}
+        <div class="table-scroll">
+          <table>
             <tr>
-              <td>{{ c.numero }}</td>
-              <td>{{ c.duree or "-" }}</td>
-              <td>{{ c.type_contrat or "-" }}</td>
-              <td>{{ c.date_effet.strftime("%d/%m/%Y") if c.date_effet else "-" }}</td>
-              <td>{{ c.date_renouvellement.strftime("%d/%m/%Y") if c.date_renouvellement else "-" }}</td>
-              <td>{{ c.conditions or "-" }}</td>
-              <td>{{ "%.2f"|format(c.prix_total) if c.prix_total is not none else "-" }}</td>
-              <td>{{ "Oui" if c.resilie else "Non" }}</td>
-              <td>{{ "Oui" if c.reconductible else "Non" }}</td>
-              <td>
-                <a class="btn small" href="{{ url_for('maintenance_contract_edit', contract_id=c.id) }}">Modifier</a>
-                <form method="post" action="{{ url_for('maintenance_contract_delete', contract_id=c.id) }}" style="display:inline;" onsubmit="return confirm('Supprimer ce contrat ?');">
-                  <button type="submit" class="btn danger small">Supprimer</button>
-                </form>
-              </td>
+              <th>No contrat</th>
+              <th>Duree</th>
+              <th>Type</th>
+              <th>Date effet</th>
+              <th>Date renouvellement</th>
+              <th>Conditions</th>
+              <th>Prix total</th>
+              <th>Resilie</th>
+              <th>Reconductible</th>
+              <th>Actions</th>
             </tr>
-          {% endfor %}
-        </table>
+            {% for c in maintenance_contracts %}
+              <tr>
+                <td>{{ c.numero }}</td>
+                <td>{{ c.duree or "-" }}</td>
+                <td>{{ c.type_contrat or "-" }}</td>
+                <td>{{ c.date_effet.strftime("%d/%m/%Y") if c.date_effet else "-" }}</td>
+                <td>{{ c.date_renouvellement.strftime("%d/%m/%Y") if c.date_renouvellement else "-" }}</td>
+                <td>{{ c.conditions or "-" }}</td>
+                <td>{{ "%.2f"|format(c.prix_total) if c.prix_total is not none else "-" }}</td>
+                <td>{{ "Oui" if c.resilie else "Non" }}</td>
+                <td>{{ "Oui" if c.reconductible else "Non" }}</td>
+                <td>
+                  <a class="btn small" href="{{ url_for('maintenance_contract_edit', contract_id=c.id) }}">Modifier</a>
+                  <form method="post" action="{{ url_for('maintenance_contract_delete', contract_id=c.id) }}" style="display:inline;" onsubmit="return confirm('Supprimer ce contrat ?');">
+                    <button type="submit" class="btn danger small">Supprimer</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </table>
+        </div>
       {% else %}
         <p class="muted">Aucun contrat de maintenance enregistre.</p>
       {% endif %}
