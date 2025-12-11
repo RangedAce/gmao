@@ -63,18 +63,8 @@ nav a:hover {
 }
 
 #calendar {
-  min-height: 90vh;
-}
-
-.fc .fc-timegrid-slot {
-  height: 42px;
-}
-.fc .fc-timegrid-slot-lane {
-  height: 42px;
-}
-.fc .fc-timegrid-slot-label {
-  font-size: 12px;
-  padding-top: 6px;
+  /* Laisse FullCalendar gérer la hauteur via slotDuration */
+  min-height: auto;
 }
 .fc .fc-timegrid-slot-label {
   font-size: 12px;
