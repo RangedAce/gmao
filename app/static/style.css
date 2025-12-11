@@ -66,6 +66,14 @@ nav a:hover {
   min-height: 90vh;
 }
 
+.fc .fc-timegrid-slot {
+  height: 44px;
+  line-height: 44px;
+}
+.fc .fc-timegrid-slot-label {
+  font-size: 12px;
+}
+
 .nav-link.active {
   background: rgba(194,175,240,0.22);
   border: 1px solid var(--border);
