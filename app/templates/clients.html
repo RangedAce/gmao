@@ -1,88 +1,68 @@
-<!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8" />
-  <title>Clients</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
 
-<nav>
-  <a href="/">Accueil</a>
-  <a href="/tickets">Tickets</a>
-  <a href="/materiels">Materiel</a>
-  <a href="/clients">Clients</a>
-  <span class="right">
-    {% if current_user %}
-      <a href="/me/password">Mon profil</a>
-      {% if is_admin %} | <a href="/users">Gerer utilisateurs & groupes</a>{% endif %}
-      | {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
-    {% else %}
-      <a href="/login">Connexion</a>
-    {% endif %}
-  </span>
-</nav>
+{% block title %}Clients{% endblock %}
 
-<main>
-  <div class="card">
-    <div style="display:flex; justify-content: space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-      <h1>Clients</h1>
-      <a href="/clients/nouveau" class="btn">+ Ajouter un client</a>
-    </div>
-
-    <form method="get" class="form-row mt-1">
-      <div>
-        <label for="code">Code client</label>
-        <input type="text" id="code" name="code" placeholder="CLT-0001" value="{{ filters.code }}">
-      </div>
-      <div>
-        <label for="nom">Nom</label>
-        <input type="text" id="nom" name="nom" placeholder="Rechercher par nom" value="{{ filters.nom }}">
-      </div>
-      <div class="form-actions">
-        <button type="submit" class="btn">Filtrer</button>
-        <a class="btn secondary" href="/clients">Réinitialiser</a>
-      </div>
-    </form>
-
-    <div class="table-toolbar">
-      <button type="button" class="col-menu-btn" id="client-menu-btn">☰ Colonnes</button>
-      <div class="col-menu" id="client-menu"></div>
-    </div>
-
-    {% if clients %}
-      <table id="clients-table" class="mt-2">
-        <thead>
-          <tr id="clients-head"></tr>
-        </thead>
-        <tbody id="clients-body">
-        {% for c in clients %}
-          <tr>
-            <td data-col="code">CLT-{{ "%04d"|format(c.id) }}</td>
-            <td data-col="nom">{{ c.nom }}</td>
-            <td data-col="contrat">
-              {% if c.contract_type == "credit_time" %}Crédit temps
-              {% elif c.contract_type == "credit_point" %}Crédit points
-              {% else %}Pas de contrat{% endif %}
-            </td>
-            <td data-col="solde">{{ c.contract_balance if c.contract_balance is not none else "-" }}</td>
-            <td data-col="sites">{{ c.sites|length }}</td>
-            <td data-col="materiels">{{ materiel_counts.get(c.id, 0) }}</td>
-            <td data-col="tickets">{{ ticket_counts.get(c.id, 0) }}</td>
-            <td data-col="actions" style="display:flex; gap:8px;">
-              <a class="btn secondary" href="/clients/{{ c.id }}">Fiche</a>
-              <a class="btn secondary" href="/clients/{{ c.id }}/edit">Modifier</a>
-            </td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    {% else %}
-      <p class="muted mt-2">Aucun client pour l'instant.</p>
-    {% endif %}
+{% block content %}
+<div class="card">
+  <div style="display:flex; justify-content: space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+    <h1>Clients</h1>
+    <a href="/clients/nouveau" class="btn">+ Ajouter un client</a>
   </div>
-</main>
 
+  <form method="get" class="form-row mt-1">
+    <div>
+      <label for="code">Code client</label>
+      <input type="text" id="code" name="code" placeholder="CLT-0001" value="{{ filters.code }}">
+    </div>
+    <div>
+      <label for="nom">Nom</label>
+      <input type="text" id="nom" name="nom" placeholder="Rechercher par nom" value="{{ filters.nom }}">
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn">Filtrer</button>
+      <a class="btn secondary" href="/clients">Réinitialiser</a>
+    </div>
+  </form>
+
+  <div class="table-toolbar">
+    <button type="button" class="col-menu-btn" id="client-menu-btn">☰ Colonnes</button>
+    <div class="col-menu" id="client-menu"></div>
+  </div>
+
+  {% if clients %}
+    <table id="clients-table" class="mt-2">
+      <thead>
+        <tr id="clients-head"></tr>
+      </thead>
+      <tbody id="clients-body">
+      {% for c in clients %}
+        <tr>
+          <td data-col="code">CLT-{{ "%04d"|format(c.id) }}</td>
+          <td data-col="nom">{{ c.nom }}</td>
+          <td data-col="contrat">
+            {% if c.contract_type == "credit_time" %}Crédit temps
+            {% elif c.contract_type == "credit_point" %}Crédit points
+            {% else %}Pas de contrat{% endif %}
+          </td>
+          <td data-col="solde">{{ c.contract_balance if c.contract_balance is not none else "-" }}</td>
+          <td data-col="sites">{{ c.sites|length }}</td>
+          <td data-col="materiels">{{ materiel_counts.get(c.id, 0) }}</td>
+          <td data-col="tickets">{{ ticket_counts.get(c.id, 0) }}</td>
+          <td data-col="actions" style="display:flex; gap:8px;">
+            <a class="btn secondary" href="/clients/{{ c.id }}">Fiche</a>
+            <a class="btn secondary" href="/clients/{{ c.id }}/edit">Modifier</a>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted mt-2">Aucun client pour l'instant.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
   const clientCols = {
     code: "Code",
@@ -229,6 +209,4 @@
     });
   });
 </script>
-
-</body>
-</html>
+{% endblock %}

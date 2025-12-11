@@ -1,67 +1,49 @@
-<!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <title>Liste des materiels</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
 
-<nav>
-  <a href="/">Accueil</a>
-  <a href="/tickets">Tickets</a>
-  <a href="/materiels">Materiel</a>
-  <a href="/clients">Clients</a>
-  <span class="right">
-    {% if current_user %}
-      <a href="/me/password">Mon profil</a>
-      {% if is_admin %} | <a href="/users">Gerer utilisateurs & groupes</a>{% endif %}
-      | {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
-    {% endif %}
-  </span>
-</nav>
+{% block title %}Materiels{% endblock %}
 
-<main>
-  <div class="card">
-    <div style="display:flex; justify-content: space-between; align-items:center; gap:12px;">
-      <h1>Materiels</h1>
-      <div style="display:flex; gap:8px;">
-        <a class="btn secondary" href="/materiels/categories">Categories / Types</a>
-        <a class="btn" href="/materiels/nouveau">+ Ajouter</a>
-      </div>
+{% block content %}
+<div class="card">
+  <div style="display:flex; justify-content: space-between; align-items:center; gap:12px;">
+    <h1>Materiels</h1>
+    <div style="display:flex; gap:8px;">
+      <a class="btn secondary" href="/materiels/categories">Categories / Types</a>
+      <a class="btn" href="/materiels/nouveau">+ Ajouter</a>
     </div>
-
-    <div class="table-toolbar">
-      <button type="button" class="col-menu-btn" id="mat-menu-btn">☰ Colonnes</button>
-      <div class="col-menu" id="mat-menu"></div>
-    </div>
-
-    <table id="materiels-table" class="mt-2">
-      <thead>
-        <tr id="materiels-head"></tr>
-      </thead>
-      <tbody id="materiels-body">
-      {% for m in materiels %}
-      <tr>
-        <td data-col="id"><a href="/materiels/{{ m.id }}">{{ m.id }}</a></td>
-        <td data-col="client">{{ m.client.nom }}</td>
-        <td data-col="categorie">{{ m.category.name if m.category else "N/A" }}</td>
-        <td data-col="type">{{ m.materiel_type.name if m.materiel_type else m.type }}</td>
-        <td data-col="modele">{{ m.modele }}</td>
-        <td data-col="serie">{{ m.numero_serie }}</td>
-        <td data-col="statut">{{ m.statut }}</td>
-        <td data-col="date_installation">{{ m.date_installation or "-" }}</td>
-        <td data-col="garantie">{{ m.garantie_fin or "-" }}</td>
-        <td data-col="actions"><a class="btn secondary" href="/materiels/{{ m.id }}/edit">Modifier</a></td>
-      </tr>
-      {% endfor %}
-      </tbody>
-    </table>
   </div>
 
-  <p class="muted"><a href="/">Retour</a></p>
-</main>
+  <div class="table-toolbar">
+    <button type="button" class="col-menu-btn" id="mat-menu-btn">☰ Colonnes</button>
+    <div class="col-menu" id="mat-menu"></div>
+  </div>
 
+  <table id="materiels-table" class="mt-2">
+    <thead>
+      <tr id="materiels-head"></tr>
+    </thead>
+    <tbody id="materiels-body">
+    {% for m in materiels %}
+    <tr>
+      <td data-col="id"><a href="/materiels/{{ m.id }}">{{ m.id }}</a></td>
+      <td data-col="client">{{ m.client.nom }}</td>
+      <td data-col="categorie">{{ m.category.name if m.category else "N/A" }}</td>
+      <td data-col="type">{{ m.materiel_type.name if m.materiel_type else m.type }}</td>
+      <td data-col="modele">{{ m.modele }}</td>
+      <td data-col="serie">{{ m.numero_serie }}</td>
+      <td data-col="statut">{{ m.statut }}</td>
+      <td data-col="date_installation">{{ m.date_installation or "-" }}</td>
+      <td data-col="garantie">{{ m.garantie_fin or "-" }}</td>
+      <td data-col="actions"><a class="btn secondary" href="/materiels/{{ m.id }}/edit">Modifier</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p class="muted"><a href="/">Retour</a></p>
+{% endblock %}
+
+{% block scripts %}
 <script>
   const matCols = {
     id: "ID",
@@ -208,6 +190,4 @@
     });
   });
 </script>
-
-</body>
-</html>
+{% endblock %}
