@@ -1438,14 +1438,20 @@ def api_planning_update_event(ticket_id):
     data = request.get_json()
 
     try:
-        if "start" in data:
-            ticket.start_datetime = datetime.fromisoformat(data["start"])
-        
-        if "duration" in data and ticket.start_datetime:
-            ticket.end_datetime = ticket.start_datetime + timedelta(minutes=int(data["duration"]))
-        elif "end" in data:
-            ticket.end_datetime = datetime.fromisoformat(data["end"])
-        if "resourceId" in data:
+        if "start" in data and data["start"]:
+            # FC sends ISO string with "Z" (UTC), but Python's fromisoformat
+            # doesn't like it before 3.11. On retire le Z.
+            start_str = data["start"].replace("Z", "")
+            ticket.start_datetime = datetime.fromisoformat(start_str)
+
+        if "duration" in data and data["duration"] and ticket.start_datetime:
+            duration_minutes = int(data["duration"])
+            ticket.end_datetime = ticket.start_datetime + timedelta(minutes=duration_minutes)
+        elif "end" in data and data["end"]:
+            end_str = data["end"].replace("Z", "")
+            ticket.end_datetime = datetime.fromisoformat(end_str)
+
+        if "resourceId" in data and data["resourceId"]:
             resource_id_str = data["resourceId"]
             if resource_id_str.startswith("user_"):
                 ticket.assigned_user_id = int(resource_id_str.split("_")[1])
@@ -1453,9 +1459,9 @@ def api_planning_update_event(ticket_id):
             elif resource_id_str.startswith("group_"):
                 ticket.assigned_group_id = int(resource_id_str.split("_")[1])
                 ticket.assigned_user_id = None
-    except (ValueError, AttributeError):
-        # Erreur de format de date
-        return jsonify({"error": "Invalid date format"}), 400
+    except (ValueError, TypeError, AttributeError):
+        # Erreur de format de date/valeur
+        return jsonify({"error": "Invalid date or value format"}), 400
 
     db.session.commit()
     return jsonify({"status": "success"})
