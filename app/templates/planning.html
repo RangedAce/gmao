@@ -38,6 +38,13 @@
       </div>
       
       <div class="form-group">
+        <label for="resource-select">Ressource</label>
+        <select id="resource-select" name="resource-id" required>
+          <option value="">-- Choisir un technicien ou groupe --</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
         <label for="duration-input">Durée (minutes)</label>
         <input type="number" id="duration-input" name="duration" min="15" step="15" value="60" required>
       </div>
@@ -57,6 +64,7 @@
     var assignForm = document.getElementById('assign-form');
     var clickedDateInput = document.getElementById('clicked-date');
     var resourceIdInput = document.getElementById('resource-id');
+    var resourceSelect = document.getElementById('resource-select');
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
       schedulerLicenseKey: 'GPL-My-Project-Is-Open-Source', // Or your commercial license key
@@ -96,7 +104,13 @@
       },
       dateClick: function(info) {
         clickedDateInput.value = info.date.toISOString();
-        resourceIdInput.value = info.resource ? info.resource.id : '';
+        var resId = info.resource ? info.resource.id : '';
+        resourceIdInput.value = resId;
+        if (resId) {
+          resourceSelect.value = resId;
+        } else {
+          resourceSelect.value = '';
+        }
         modal.style.display = 'block';
       }
     });
@@ -117,10 +131,14 @@
       var ticketId = document.getElementById('ticket-select').value;
       var duration = document.getElementById('duration-input').value;
       var start = clickedDateInput.value;
-      var resourceId = resourceIdInput.value;
+      var resourceId = resourceSelect.value;
 
       if (!ticketId) {
         alert('Veuillez choisir un ticket.');
+        return;
+      }
+      if (!resourceId) {
+        alert('Veuillez choisir une ressource.');
         return;
       }
 
@@ -142,6 +160,23 @@
           calendar.refetchEvents();
         }
       });
+    }
+
+    function loadResources() {
+      fetch('/api/planning/resources')
+        .then(resp => resp.json())
+        .then(data => {
+          resourceSelect.innerHTML = '<option value="">-- Choisir un technicien ou groupe --</option>';
+          data.forEach(res => {
+            var opt = document.createElement('option');
+            opt.value = res.id;
+            opt.textContent = res.title;
+            resourceSelect.appendChild(opt);
+          });
+        })
+        .catch(() => {
+          resourceSelect.innerHTML = '<option value=\"\">Impossible de charger les ressources</option>';
+        });
     }
 
     function updateEvent(event) {
@@ -168,6 +203,8 @@
         }
       });
     }
+
+    loadResources();
   });
 </script>
 {% endblock %}
