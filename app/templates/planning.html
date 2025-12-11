@@ -8,6 +8,7 @@
   You need a license to use them in production.
   See https://fullcalendar.io/pricing
   -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar-scheduler@6.1.11/index.global.min.css">
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar-scheduler@6.1.11/index.global.min.js'></script>
 <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.11/locales/fr.global.min.js"></script>
 {% endblock %}
@@ -66,6 +67,12 @@
         center: 'title',
         right: 'resourceTimeGridWeek,resourceTimeGridDay,dayGridMonth'
       },
+      timeZone: 'local',
+      slotMinTime: '08:00:00',
+      slotMaxTime: '18:00:00',
+      allDaySlot: false,
+      slotDuration: '00:30:00',
+      slotLabelFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
       businessHours: [
         {
           daysOfWeek: [ 1, 2, 3, 4, 5 ], // Monday - Friday
@@ -129,7 +136,7 @@
         })
       }).then(response => {
         if (!response.ok) {
-          alert('Erreur lors de l'assignation du ticket');
+          alert("Erreur lors de l'assignation du ticket");
         } else {
           modal.style.display = 'none';
           calendar.refetchEvents();
