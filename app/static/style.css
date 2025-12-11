@@ -62,6 +62,10 @@ nav a:hover {
   color: #fff;
 }
 
+#calendar {
+  min-height: 80vh;
+}
+
 .nav-link.active {
   background: rgba(194,175,240,0.22);
   border: 1px solid var(--border);
