@@ -253,7 +253,12 @@
       cb.value = key;
       cb.checked = visible.has(key);
       cb.addEventListener("change", () => {
-        if (cb.checked) visible.add(key); else visible.delete(key);
+        if (cb.checked) {
+          visible.add(key);
+          if (!order.includes(key)) order.push(key);
+        } else {
+          visible.delete(key);
+        }
         saveState(order, visible, locked);
         applyOrder(order, visible, locked);
       });

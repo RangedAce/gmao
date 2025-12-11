@@ -132,7 +132,12 @@
       cb.value = k;
       cb.checked = visible.has(k);
       cb.addEventListener("change", () => {
-        if (cb.checked) visible.add(k); else visible.delete(k);
+        if (cb.checked) {
+          visible.add(k);
+          if (!order.includes(k)) order.push(k);
+        } else {
+          visible.delete(k);
+        }
         saveMatState(order, visible, locked);
         applyMatOrder(order, visible, locked);
       });
