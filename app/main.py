@@ -944,14 +944,14 @@ def ticket_fiche(id):
                         if pts_val is None or pts_val <= 0:
                             error_status = "Nombre d'interventions invalide pour le crédit points."
                         else:
-                        client.contract_balance = (client.contract_balance or 0) - pts_val
-                        db.session.add(ContractLog(
-                            client_id=client.id,
-                            ticket_id=ticket.id,
-                            kind="credit_point",
-                            amount=pts_val,
-                            note=contract_note or f"Ticket #{ticket.id}"
-                        ))
+                            client.contract_balance = (client.contract_balance or 0) - pts_val
+                            db.session.add(ContractLog(
+                                client_id=client.id,
+                                ticket_id=ticket.id,
+                                kind="credit_point",
+                                amount=pts_val,
+                                note=contract_note or f"Ticket #{ticket.id}"
+                            ))
             if not error_status:
                 db.session.commit()
 
