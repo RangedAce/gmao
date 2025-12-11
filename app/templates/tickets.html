@@ -211,9 +211,15 @@
     localStorage.setItem(storageKey, JSON.stringify({ order, visible:[...visible], locked }));
   }
 
+  const ticketsBody = document.getElementById("tickets-body");
+  const ticketRowsData = Array.from(ticketsBody.querySelectorAll("tr")).map(row => {
+    const map = {};
+    row.querySelectorAll("td").forEach(td => { map[td.dataset.col] = td.cloneNode(true); });
+    return map;
+  });
+
   function applyOrder(order, visible, locked) {
     const head = document.getElementById("tickets-head");
-    const bodyRows = document.querySelectorAll("#tickets-body tr");
     head.innerHTML = "";
     order.forEach(col => {
       if (!visible.has(col)) return;
@@ -224,15 +230,16 @@
       th.draggable = !locked;
       head.appendChild(th);
     });
-    bodyRows.forEach(row => {
-      const cells = {};
-      row.querySelectorAll("td").forEach(td => { cells[td.dataset.col] = td; });
-      row.innerHTML = "";
+
+    // rebuild body
+    ticketsBody.innerHTML = "";
+    ticketRowsData.forEach(rowMap => {
+      const tr = document.createElement("tr");
       order.forEach(col => {
         if (!visible.has(col)) return;
-        const cell = cells[col];
-        if (cell) row.appendChild(cell);
+        if (rowMap[col]) tr.appendChild(rowMap[col].cloneNode(true));
       });
+      ticketsBody.appendChild(tr);
     });
   }
 

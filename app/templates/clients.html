@@ -112,9 +112,15 @@
   }
   function saveClientState(order, visible, locked) { localStorage.setItem(clientStorageKey, JSON.stringify({ order, visible:[...visible], locked })); }
 
+  const clientsBody = document.getElementById("clients-body");
+  const clientRowsData = Array.from(clientsBody.querySelectorAll("tr")).map(row => {
+    const map = {};
+    row.querySelectorAll("td").forEach(td => map[td.dataset.col] = td.cloneNode(true));
+    return map;
+  });
+
   function applyClientOrder(order, visible, locked) {
     const head = document.getElementById("clients-head");
-    const rows = document.querySelectorAll("#clients-body tr");
     head.innerHTML = "";
     order.forEach(col => {
       if (!visible.has(col)) return;
@@ -125,14 +131,15 @@
       th.draggable = !locked;
       head.appendChild(th);
     });
-    rows.forEach(row => {
-      const cells = {};
-      row.querySelectorAll("td").forEach(td => { cells[td.dataset.col] = td; });
-      row.innerHTML = "";
+
+    clientsBody.innerHTML = "";
+    clientRowsData.forEach(rowMap => {
+      const tr = document.createElement("tr");
       order.forEach(col => {
         if (!visible.has(col)) return;
-        if (cells[col]) row.appendChild(cells[col]);
+        if (rowMap[col]) tr.appendChild(rowMap[col].cloneNode(true));
       });
+      clientsBody.appendChild(tr);
     });
   }
 
