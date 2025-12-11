@@ -1,11 +1,11 @@
 import os
 from datetime import datetime, timedelta
+import difflib
 
 from flask import (
     Flask, render_template, request,
     redirect, url_for, session, jsonify
 )
-import difflib
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import or_, inspect, func
@@ -314,7 +314,7 @@ def ensure_schema():
             conditions TEXT,
             prix_total FLOAT,
             resilie BOOLEAN NOT NULL DEFAULT FALSE,
-        reconductible BOOLEAN NOT NULL DEFAULT FALSE
+            reconductible BOOLEAN NOT NULL DEFAULT FALSE
         );
         """))
         conn.execute(db.text("CREATE INDEX IF NOT EXISTS ix_maintenance_contracts_client ON maintenance_contracts(client_id);"))
@@ -518,6 +518,8 @@ def nouveau_client():
         db.session.commit()
         return redirect(url_for("liste_clients"))
     return render_template("nouveau_client.html")
+
+
 @app.route("/clients/<int:id>/edit", methods=["GET", "POST"])
 def edit_client(id):
     client = Client.query.get_or_404(id)
@@ -676,6 +678,8 @@ def delete_site(site_id):
     db.session.delete(site)
     db.session.commit()
     return redirect(url_for("client_fiche", id=client_id))
+
+
 @app.route("/api/client/<int:client_id>/data")
 def api_client_data(client_id):
     # Vérifie que le client existe
@@ -791,6 +795,8 @@ def nouveau_materiel():
 @app.route("/materiels/<int:id>")
 def materiel_fiche(id):
     return render_template("materiel_fiche.html", m=Materiel.query.get_or_404(id))
+
+
 @app.route("/materiels/<int:id>/edit", methods=["GET", "POST"])
 def materiel_edit(id):
     materiel = Materiel.query.get_or_404(id)
@@ -1439,6 +1445,8 @@ def api_planning_update_event(ticket_id):
                 ticket.assigned_group_id = int(resource_id_str.split("_")[1])
                 ticket.assigned_user_id = None
     except (ValueError, AttributeError):
+        # Erreur de format de date
+        return jsonify({"error": "Invalid date format"}), 400
 
     db.session.commit()
     return jsonify({"status": "success"})
