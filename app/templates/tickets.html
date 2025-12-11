@@ -164,9 +164,9 @@
           </td>
           <td data-col="categorie">{{ t.category.name if t.category else "-" }}</td>
           <td data-col="type_materiel">{{ t.materiel_type.name if t.materiel_type else "-" }}</td>
-          <td data-col="etat">{{ t.etat }}</td>
-          <td data-col="ouverture">{{ t.date_ouverture.strftime("%d/%m/%Y %H:%M") }}</td>
-          <td data-col="description">{{ t.description or "-" }}</td>
+        <td data-col="etat">{{ t.etat }}</td>
+        <td data-col="ouverture">{{ t.date_ouverture.strftime("%d/%m/%Y %H:%M") }}</td>
+          <td data-col="description" class="ellipsis-cell" data-full="{{ t.description or '-' }}" title="{{ t.description or '-' }}">{{ t.description or "-" }}</td>
         </tr>
       {% endfor %}
       </tbody>
@@ -214,7 +214,10 @@
   const ticketsBody = document.getElementById("tickets-body");
   const ticketRowsData = Array.from(ticketsBody.querySelectorAll("tr")).map(row => {
     const map = {};
-    row.querySelectorAll("td").forEach(td => { map[td.dataset.col] = td.cloneNode(true); });
+    row.querySelectorAll("td").forEach(td => {
+      const clone = td.cloneNode(true);
+      map[td.dataset.col] = clone;
+    });
     return map;
   });
 
@@ -241,6 +244,7 @@
       });
       ticketsBody.appendChild(tr);
     });
+    attachDescriptionHandlers();
   }
 
   function buildMenu(order, visible, locked) {
@@ -327,6 +331,20 @@
       buildMenu(state.order, state.visible, state.locked);
       dragCol = null;
     });
+
+    function attachDescriptionHandlers() {
+      document.querySelectorAll(".ellipsis-cell").forEach(cell => {
+        cell.addEventListener("click", (e) => {
+          e.stopPropagation();
+          document.querySelectorAll(".ellipsis-cell.sticky-popup").forEach(el => el.classList.remove("sticky-popup"));
+          cell.classList.add("sticky-popup");
+        });
+      });
+      document.addEventListener("click", () => {
+        document.querySelectorAll(".ellipsis-cell.sticky-popup").forEach(el => el.classList.remove("sticky-popup"));
+      });
+    }
+    attachDescriptionHandlers();
   });
 </script>
 
