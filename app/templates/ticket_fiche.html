@@ -78,6 +78,7 @@
 {% if current_user %}
   <h2>Modifier le statut</h2>
   {% if error_status %}<p style="color:red;">{{ error_status }}</p>{% endif %}
+  {% if success_status %}<p style="color:lightgreen;">{{ success_status }}</p>{% endif %}
   <form method="post">
     <input type="hidden" name="action" value="status">
     <select name="etat">
@@ -88,6 +89,44 @@
     </select>
     <button type="submit">Mettre à jour</button>
   </form>
+
+  {% if t.client.contract_type in ["credit_time", "credit_point"] %}
+    <h3 style="margin-top:16px;">Décompter le contrat ({{ "temps" if t.client.contract_type=="credit_time" else "points" }})</h3>
+    <form method="post" class="mt-1">
+      <input type="hidden" name="action" value="log_contract">
+      {% if t.client.contract_type == "credit_time" %}
+        <div class="form-row">
+          <div>
+            <label>Durée (heures)</label>
+            <input type="number" step="0.25" min="0" name="duration_hours" placeholder="Heures totales">
+          </div>
+          <div>
+            <label>Début</label>
+            <input type="time" name="start_time">
+          </div>
+          <div>
+            <label>Fin</label>
+            <input type="time" name="end_time">
+          </div>
+        </div>
+        <small>Indiquez soit la durée, soit l'heure de début et de fin.</small>
+      {% else %}
+        <div class="form-row">
+          <div>
+            <label>Points utilisés</label>
+            <input type="number" step="1" min="0" name="points_used" placeholder="Nombre de points">
+          </div>
+        </div>
+      {% endif %}
+      <div class="form-row">
+        <div style="width:100%;">
+          <label>Note</label>
+          <input type="text" name="contract_note" placeholder="Note optionnelle">
+        </div>
+      </div>
+      <button type="submit">Décompter</button>
+    </form>
+  {% endif %}
 
   <h2>Ajouter un commentaire</h2>
   <form method="post">

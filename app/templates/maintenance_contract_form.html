@@ -54,9 +54,13 @@
           <textarea name="conditions" rows="3">{{ contract.conditions if contract else '' }}</textarea>
         </div>
       </div>
-      <div class="form-row">
-        <label><input type="checkbox" name="resilie" {% if contract and contract.resilie %}checked{% endif %}> Résilié</label>
-        <label><input type="checkbox" name="reconductible" {% if contract and contract.reconductible %}checked{% endif %}> Reconductible</label>
+      <div class="form-row" style="gap:16px; align-items:center;">
+        <label style="display:flex; align-items:center; gap:6px;">
+          <input type="checkbox" name="resilie" {% if contract and contract.resilie %}checked{% endif %}> Résilié
+        </label>
+        <label style="display:flex; align-items:center; gap:6px;">
+          <input type="checkbox" name="reconductible" {% if contract and contract.reconductible %}checked{% endif %}> Reconductible
+        </label>
       </div>
       <button type="submit">Enregistrer</button>
       <a class="btn secondary" href="{{ url_for('client_fiche', id=client.id) }}">Annuler</a>
