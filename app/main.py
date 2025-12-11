@@ -877,6 +877,7 @@ def ticket_fiche(id):
     ticket = Ticket.query.get_or_404(id)
 
     error_status = None
+    success_status = None
     if request.method == "POST":
         user = User.query.get(session["user_id"])
         action = request.form.get("action")
@@ -943,16 +944,73 @@ def ticket_fiche(id):
                         if pts_val is None or pts_val <= 0:
                             error_status = "Nombre d'interventions invalide pour le crédit points."
                         else:
-                            client.contract_balance = (client.contract_balance or 0) - pts_val
-                            db.session.add(ContractLog(
-                                client_id=client.id,
-                                ticket_id=ticket.id,
-                                kind="credit_point",
-                                amount=pts_val,
-                                note=contract_note or f"Ticket #{ticket.id}"
-                            ))
+                        client.contract_balance = (client.contract_balance or 0) - pts_val
+                        db.session.add(ContractLog(
+                            client_id=client.id,
+                            ticket_id=ticket.id,
+                            kind="credit_point",
+                            amount=pts_val,
+                            note=contract_note or f"Ticket #{ticket.id}"
+                        ))
             if not error_status:
                 db.session.commit()
+
+        if action == "log_contract":
+            client = ticket.client
+            contract_note = (request.form.get("contract_note") or "").strip()
+            if client.contract_type == "credit_time":
+                duration = request.form.get("duration_hours")
+                start = request.form.get("start_time")
+                end = request.form.get("end_time")
+                hours = None
+                if duration:
+                    try:
+                        hours = float(duration)
+                    except ValueError:
+                        hours = None
+                elif start and end:
+                    try:
+                        fmt = "%H:%M"
+                        start_dt = datetime.strptime(start, fmt)
+                        end_dt = datetime.strptime(end, fmt)
+                        delta = (end_dt - start_dt).total_seconds() / 3600
+                        hours = max(delta, 0)
+                    except Exception:
+                        hours = None
+                if hours is None or hours <= 0:
+                    error_status = "Durée invalide pour le crédit temps."
+                else:
+                    client.contract_balance = (client.contract_balance or 0) - hours
+                    db.session.add(ContractLog(
+                        client_id=client.id,
+                        ticket_id=ticket.id,
+                        kind="credit_time",
+                        amount=hours,
+                        note=contract_note or f"Ticket #{ticket.id}"
+                    ))
+                    db.session.commit()
+                    success_status = "Temps enregistré."
+            elif client.contract_type == "credit_point":
+                points = request.form.get("points_used")
+                pts_val = None
+                if points:
+                    try:
+                        pts_val = float(points)
+                    except ValueError:
+                        pts_val = None
+                if pts_val is None or pts_val <= 0:
+                    error_status = "Nombre d'interventions invalide pour le crédit points."
+                else:
+                    client.contract_balance = (client.contract_balance or 0) - pts_val
+                    db.session.add(ContractLog(
+                        client_id=client.id,
+                        ticket_id=ticket.id,
+                        kind="credit_point",
+                        amount=pts_val,
+                        note=contract_note or f"Ticket #{ticket.id}"
+                    ))
+                    db.session.commit()
+                    success_status = "Points enregistrés."
 
         if action == "edit_comment":
             comment_id = request.form.get("comment_id")
@@ -991,7 +1049,7 @@ def ticket_fiche(id):
                         )
                         edit_diffs[c.id] = "\n".join(diff_lines)
             contract_logs = ContractLog.query.filter_by(ticket_id=id).order_by(ContractLog.created_at.asc()).all()
-            return render_template("ticket_fiche.html", t=ticket, comments=comments, edit_diffs=edit_diffs, is_admin=is_admin, contract_logs=contract_logs, error_status=error_status)
+            return render_template("ticket_fiche.html", t=ticket, comments=comments, edit_diffs=edit_diffs, is_admin=is_admin, contract_logs=contract_logs, error_status=error_status, success_status=success_status)
 
         return redirect(url_for("ticket_fiche", id=id))
 
@@ -1021,7 +1079,7 @@ def ticket_fiche(id):
     if error_status:
         return render_template("ticket_fiche.html", t=ticket, comments=comments, edit_diffs=edit_diffs, is_admin=is_admin, contract_logs=contract_logs, error_status=error_status)
 
-    return render_template("ticket_fiche.html", t=ticket, comments=comments, edit_diffs=edit_diffs, is_admin=is_admin, contract_logs=contract_logs)
+    return render_template("ticket_fiche.html", t=ticket, comments=comments, edit_diffs=edit_diffs, is_admin=is_admin, contract_logs=contract_logs, error_status=error_status, success_status=success_status)
 
 @app.route("/tickets/<int:id>/edit", methods=["GET", "POST"])
 def ticket_edit(id):

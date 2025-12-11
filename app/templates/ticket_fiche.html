@@ -78,6 +78,7 @@
 {% if current_user %}
   <h2>Modifier le statut</h2>
   {% if error_status %}<p style="color:red;">{{ error_status }}</p>{% endif %}
+  {% if success_status %}<p style="color:lightgreen;">{{ success_status }}</p>{% endif %}
   <form method="post">
     <input type="hidden" name="action" value="status">
     <select name="etat">
@@ -108,6 +109,34 @@
     </div>
     <button type="submit">Mettre à jour</button>
   </form>
+
+  {% if t.client.contract_type in ["credit_time", "credit_point"] %}
+    <h3 style="margin-top:16px;">Enregistrer le temps/points sans changer le statut</h3>
+    <form method="post" class="mt-1">
+      <input type="hidden" name="action" value="log_contract">
+      {% if t.client.contract_type == "credit_time" %}
+        <div class="mt-1">
+          <label>Durée (heures)</label>
+          <input type="number" step="0.25" min="0" name="duration_hours">
+        </div>
+        <div class="mt-1">
+          <label>Plage horaire (HH:MM)</label>
+          <input type="time" name="start_time">
+          <input type="time" name="end_time">
+        </div>
+      {% elif t.client.contract_type == "credit_point" %}
+        <div class="mt-1">
+          <label>Points utilisés</label>
+          <input type="number" step="1" min="0" name="points_used">
+        </div>
+      {% endif %}
+      <div class="mt-1">
+        <label>Note contrat</label>
+        <input type="text" name="contract_note">
+      </div>
+      <button type="submit">Enregistrer</button>
+    </form>
+  {% endif %}
 
   <h2>Ajouter un commentaire</h2>
   <form method="post">
