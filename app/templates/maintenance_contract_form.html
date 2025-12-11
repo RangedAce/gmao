@@ -37,11 +37,11 @@
       <div class="form-row">
         <div>
           <label>Date effet</label>
-          <input type="date" name="date_effet" value="{{ contract.date_effet|date('Y-m-d') if contract and contract.date_effet else '' }}">
+          <input type="date" name="date_effet" value="{{ contract.date_effet.strftime('%Y-%m-%d') if contract and contract.date_effet else '' }}">
         </div>
         <div>
           <label>Date renouvellement</label>
-          <input type="date" name="date_renouvellement" value="{{ contract.date_renouvellement|date('Y-m-d') if contract and contract.date_renouvellement else '' }}">
+          <input type="date" name="date_renouvellement" value="{{ contract.date_renouvellement.strftime('%Y-%m-%d') if contract and contract.date_renouvellement else '' }}">
         </div>
         <div>
           <label>Prix total</label>
