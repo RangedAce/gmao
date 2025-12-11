@@ -45,7 +45,7 @@
           Pas de contrat
         {% endif %}
       </p>
-      <p>Solde : {{ client.contract_balance if client.contract_balance is not none else "N/A" }}</p>
+      <p>Solde : {{ client.contract_balance if client.contract_balance is not none else "N/A" }}{% if client.contract_type == "credit_time" and client.contract_balance is not none %} heures{% elif client.contract_type == "credit_point" and client.contract_balance is not none %} points{% endif %}</p>
       <p class="mt-1"><a class="btn secondary" href="#interventions">Voir les interventions</a></p>
     </div>
 
@@ -77,7 +77,7 @@
                 <td>{{ c.date_effet.strftime("%d/%m/%Y") if c.date_effet else "-" }}</td>
                 <td>{{ c.date_renouvellement.strftime("%d/%m/%Y") if c.date_renouvellement else "-" }}</td>
                 <td>{{ c.conditions or "-" }}</td>
-                <td>{{ "%.2f €"|format(c.prix_total) if c.prix_total is not none else "-" }}</td>
+                <td>{% if c.prix_total is not none %}{{ "%.2f"|format(c.prix_total) }} €{% else %}-{% endif %}</td>
                 <td>{{ "Oui" if c.resilie else "Non" }}</td>
                 <td>{{ "Oui" if c.reconductible else "Non" }}</td>
                 <td>
