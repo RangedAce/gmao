@@ -67,8 +67,14 @@ nav a:hover {
 }
 
 .fc .fc-timegrid-slot {
-  height: 44px;
-  line-height: 44px;
+  height: 42px;
+}
+.fc .fc-timegrid-slot-lane {
+  height: 42px;
+}
+.fc .fc-timegrid-slot-label {
+  font-size: 12px;
+  padding-top: 6px;
 }
 .fc .fc-timegrid-slot-label {
   font-size: 12px;
