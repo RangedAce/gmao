@@ -82,6 +82,18 @@ nav a:hover {
   font-size: 12px;
 }
 
+.fc .fc-scrollgrid-section-sticky > * {
+  background: var(--card);
+  color: var(--text);
+}
+.fc .fc-col-header-cell {
+  background: linear-gradient(90deg, rgba(145,145,233,0.2), rgba(45,93,123,0.2));
+  border-color: var(--border);
+}
+.fc .fc-scrollgrid {
+  border-color: var(--border);
+}
+
 .nav-link.active {
   background: rgba(194,175,240,0.22);
   border: 1px solid var(--border);
