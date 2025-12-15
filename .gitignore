@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+.env
+venv/
+env/
+.venv/
+
+# Flask / Cache
+instance/
+*.sqlite
+*.db
+
+# Logs
+logs/
+*.log
+
+# Byte-compiled
+*.cache
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker (jamais versionner les volumes)
+db/
+postgres-data/
+*.pid
+
+# Exclusions spécifiques projet
+# (ton code app est versionné, pas l’infra Docker)
