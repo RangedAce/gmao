@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Materiels{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div style="display:flex; justify-content: space-between; align-items:center; gap:12px;">
+    <h1>Materiels</h1>
+    <div style="display:flex; gap:8px;">
+      <a class="btn secondary" href="/materiels/categories">Categories / Types</a>
+      <a class="btn" href="/materiels/nouveau">+ Ajouter</a>
+    </div>
+  </div>
+
+  <div class="table-toolbar">
+    <button type="button" class="col-menu-btn" id="mat-menu-btn">☰ Colonnes</button>
+    <div class="col-menu" id="mat-menu"></div>
+  </div>
+
+  <table id="materiels-table" class="mt-2">
+    <thead>
+      <tr id="materiels-head"></tr>
+    </thead>
+    <tbody id="materiels-body">
+    {% for m in materiels %}
+    <tr>
+      <td data-col="id"><a href="/materiels/{{ m.id }}">{{ m.id }}</a></td>
+      <td data-col="client">{{ m.client.nom }}</td>
+      <td data-col="categorie">{{ m.category.name if m.category else "N/A" }}</td>
+      <td data-col="type">{{ m.materiel_type.name if m.materiel_type else m.type }}</td>
+      <td data-col="modele">{{ m.modele }}</td>
+      <td data-col="serie">{{ m.numero_serie }}</td>
+      <td data-col="statut">{{ m.statut }}</td>
+      <td data-col="date_installation">{{ m.date_installation or "-" }}</td>
+      <td data-col="garantie">{{ m.garantie_fin or "-" }}</td>
+      <td data-col="actions"><a class="btn secondary" href="/materiels/{{ m.id }}/edit">Modifier</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p class="muted"><a href="/">Retour</a></p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const matCols = {
+    id: "ID",
+    client: "Client",
+    categorie: "Categorie",
+    type: "Type",
+    modele: "Modele",
+    serie: "No Serie",
+    statut: "Statut",
+    date_installation: "Date installation",
+    garantie: "Fin garantie",
+    actions: "Actions",
+  };
+  const matDefault = ["id","client","categorie","type","modele","serie","statut","date_installation","garantie","actions"];
+  const matKey = "materiels_columns_state_v3";
+
+  function loadMatState() {
+    const stored = localStorage.getItem(matKey);
+    if (!stored) return { order:[...matDefault], visible:new Set(matDefault), locked:false };
+    try {
+      const obj = JSON.parse(stored);
+      const order = Array.isArray(obj.order) && obj.order.length ? obj.order.filter(c => matCols[c]) : [...matDefault];
+      const visible = new Set(Array.isArray(obj.visible) && obj.visible.length ? obj.visible.filter(c => matCols[c]) : order);
+      const locked = !!obj.locked;
+      return { order, visible, locked };
+    } catch(_) { return { order:[...matDefault], visible:new Set(matDefault), locked:false }; }
+  }
+  function saveMatState(order, visible, locked) { localStorage.setItem(matKey, JSON.stringify({ order, visible:[...visible], locked })); }
+
+  const matBody = document.getElementById("materiels-body");
+  const matRowsData = Array.from(matBody.querySelectorAll("tr")).map(row => {
+    const map = {};
+    row.querySelectorAll("td").forEach(td => map[td.dataset.col] = td.cloneNode(true));
+    return map;
+  });
+
+  function applyMatOrder(order, visible, locked) {
+    const head = document.getElementById("materiels-head");
+    head.innerHTML = "";
+    order.forEach(col => {
+      if (!visible.has(col)) return;
+      const th = document.createElement("th");
+      th.textContent = matCols[col] || col;
+      th.dataset.col = col;
+      th.classList.add("draggable-th");
+      th.draggable = !locked;
+      head.appendChild(th);
+    });
+
+    matBody.innerHTML = "";
+    matRowsData.forEach(rowMap => {
+      const tr = document.createElement("tr");
+      order.forEach(col => {
+        if (!visible.has(col)) return;
+        if (rowMap[col]) tr.appendChild(rowMap[col].cloneNode(true));
+      });
+      matBody.appendChild(tr);
+    });
+  }
+
+  function buildMatMenu(order, visible, locked) {
+    const menu = document.getElementById("mat-menu");
+    menu.innerHTML = "";
+    Object.entries(matCols).forEach(([k,v]) => {
+      const lb = document.createElement("label");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = k;
+      cb.checked = visible.has(k);
+      cb.addEventListener("change", () => {
+        if (cb.checked) {
+          visible.add(k);
+          if (!order.includes(k)) order.push(k);
+        } else {
+          visible.delete(k);
+        }
+        saveMatState(order, visible, locked);
+        applyMatOrder(order, visible, locked);
+      });
+      lb.appendChild(cb);
+      lb.append(" " + v);
+      menu.appendChild(lb);
+    });
+    const lockLabel = document.createElement("label");
+    lockLabel.classList.add("lock");
+    const lockCb = document.createElement("input");
+    lockCb.type = "checkbox";
+    lockCb.checked = locked;
+    lockCb.addEventListener("change", () => {
+      saveMatState(order, visible, lockCb.checked);
+      applyMatOrder(order, visible, lockCb.checked);
+    });
+    lockLabel.appendChild(lockCb);
+    lockLabel.append(" Verrouiller l'ordre");
+    menu.appendChild(lockLabel);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const state = loadMatState();
+    applyMatOrder(state.order, state.visible, state.locked);
+    buildMatMenu(state.order, state.visible, state.locked);
+
+    const menuBtn = document.getElementById("mat-menu-btn");
+    const menu = document.getElementById("mat-menu");
+    menuBtn.addEventListener("click", () => menu.classList.toggle("visible"));
+    document.addEventListener("click", (e) => {
+      if (!menu.contains(e.target) && e.target !== menuBtn) menu.classList.remove("visible");
+    });
+
+    let dragCol = null;
+    const head = document.getElementById("materiels-head");
+    head.addEventListener("dragstart", (e) => {
+      dragCol = e.target.dataset.col;
+      e.dataTransfer.effectAllowed = "move";
+    });
+    head.addEventListener("dragover", (e) => {
+      if (state.locked || !dragCol) return;
+      e.preventDefault();
+      const target = e.target.closest("th");
+      if (!target || target.dataset.col === dragCol) return;
+      target.classList.add("drag-over");
+    });
+    head.addEventListener("dragleave", (e) => {
+      const target = e.target.closest("th");
+      if (target) target.classList.remove("drag-over");
+    });
+    head.addEventListener("drop", (e) => {
+      if (state.locked || !dragCol) return;
+      e.preventDefault();
+      const target = e.target.closest("th");
+      if (!target) return;
+      target.classList.remove("drag-over");
+      const targetCol = target.dataset.col;
+      if (!targetCol || targetCol === dragCol) return;
+      const from = state.order.indexOf(dragCol);
+      const to = state.order.indexOf(targetCol);
+      if (from === -1 || to === -1) return;
+      state.order.splice(from, 1);
+      state.order.splice(to, 0, dragCol);
+      saveMatState(state.order, state.visible, state.locked);
+      applyMatOrder(state.order, state.visible, state.locked);
+      buildMatMenu(state.order, state.visible, state.locked);
+      dragCol = null;
+    });
+  });
+</script>
+{% endblock %}

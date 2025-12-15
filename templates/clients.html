@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Clients{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div style="display:flex; justify-content: space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+    <h1>Clients</h1>
+    <a href="/clients/nouveau" class="btn">+ Ajouter un client</a>
+  </div>
+
+  <form method="get" class="form-row mt-1">
+    <div>
+      <label for="code">Code client</label>
+      <input type="text" id="code" name="code" placeholder="CLT-0001" value="{{ filters.code }}">
+    </div>
+    <div>
+      <label for="nom">Nom</label>
+      <input type="text" id="nom" name="nom" placeholder="Rechercher par nom" value="{{ filters.nom }}">
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn">Filtrer</button>
+      <a class="btn secondary" href="/clients">Réinitialiser</a>
+    </div>
+  </form>
+
+  <div class="table-toolbar">
+    <button type="button" class="col-menu-btn" id="client-menu-btn">☰ Colonnes</button>
+    <div class="col-menu" id="client-menu"></div>
+  </div>
+
+  {% if clients %}
+    <table id="clients-table" class="mt-2">
+      <thead>
+        <tr id="clients-head"></tr>
+      </thead>
+      <tbody id="clients-body">
+      {% for c in clients %}
+        <tr>
+          <td data-col="code">CLT-{{ "%04d"|format(c.id) }}</td>
+          <td data-col="nom">{{ c.nom }}</td>
+          <td data-col="contrat">
+            {% if c.contract_type == "credit_time" %}Crédit temps
+            {% elif c.contract_type == "credit_point" %}Crédit points
+            {% else %}Pas de contrat{% endif %}
+          </td>
+          <td data-col="solde">{{ c.contract_balance if c.contract_balance is not none else "-" }}</td>
+          <td data-col="sites">{{ c.sites|length }}</td>
+          <td data-col="materiels">{{ materiel_counts.get(c.id, 0) }}</td>
+          <td data-col="tickets">{{ ticket_counts.get(c.id, 0) }}</td>
+          <td data-col="actions" style="display:flex; gap:8px;">
+            <a class="btn secondary" href="/clients/{{ c.id }}">Fiche</a>
+            <a class="btn secondary" href="/clients/{{ c.id }}/edit">Modifier</a>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted mt-2">Aucun client pour l'instant.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const clientCols = {
+    code: "Code",
+    nom: "Nom",
+    contrat: "Contrat",
+    solde: "Solde",
+    sites: "Sites",
+    materiels: "Matériels",
+    tickets: "Tickets",
+    actions: "Actions",
+  };
+  const clientDefault = ["code","nom","contrat","solde","sites","materiels","tickets","actions"];
+  const clientStorageKey = "clients_columns_state_v3";
+
+  function loadClientState() {
+    const stored = localStorage.getItem(clientStorageKey);
+    if (!stored) return { order:[...clientDefault], visible:new Set(clientDefault), locked:false };
+    try {
+      const obj = JSON.parse(stored);
+      const order = Array.isArray(obj.order) && obj.order.length ? obj.order.filter(c => clientCols[c]) : [...clientDefault];
+      const visible = new Set(Array.isArray(obj.visible) && obj.visible.length ? obj.visible.filter(c => clientCols[c]) : order);
+      const locked = !!obj.locked;
+      return { order, visible, locked };
+    } catch(_) {
+      return { order:[...clientDefault], visible:new Set(clientDefault), locked:false };
+    }
+  }
+  function saveClientState(order, visible, locked) { localStorage.setItem(clientStorageKey, JSON.stringify({ order, visible:[...visible], locked })); }
+
+  const clientsBody = document.getElementById("clients-body");
+  const clientRowsData = Array.from(clientsBody.querySelectorAll("tr")).map(row => {
+    const map = {};
+    row.querySelectorAll("td").forEach(td => map[td.dataset.col] = td.cloneNode(true));
+    return map;
+  });
+
+  function applyClientOrder(order, visible, locked) {
+    const head = document.getElementById("clients-head");
+    head.innerHTML = "";
+    order.forEach(col => {
+      if (!visible.has(col)) return;
+      const th = document.createElement("th");
+      th.textContent = clientCols[col] || col;
+      th.dataset.col = col;
+      th.classList.add("draggable-th");
+      th.draggable = !locked;
+      head.appendChild(th);
+    });
+
+    clientsBody.innerHTML = "";
+    clientRowsData.forEach(rowMap => {
+      const tr = document.createElement("tr");
+      order.forEach(col => {
+        if (!visible.has(col)) return;
+        if (rowMap[col]) tr.appendChild(rowMap[col].cloneNode(true));
+      });
+      clientsBody.appendChild(tr);
+    });
+  }
+
+  function buildClientMenu(order, visible, locked) {
+    const menu = document.getElementById("client-menu");
+    menu.innerHTML = "";
+    Object.entries(clientCols).forEach(([key,label]) => {
+      const lb = document.createElement("label");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = key;
+      cb.checked = visible.has(key);
+      cb.addEventListener("change", () => {
+        if (cb.checked) {
+          visible.add(key);
+          if (!order.includes(key)) order.push(key);
+        } else {
+          visible.delete(key);
+        }
+        saveClientState(order, visible, locked);
+        applyClientOrder(order, visible, locked);
+      });
+      lb.appendChild(cb);
+      lb.append(" " + label);
+      menu.appendChild(lb);
+    });
+    const lockLabel = document.createElement("label");
+    lockLabel.classList.add("lock");
+    const lockCb = document.createElement("input");
+    lockCb.type = "checkbox";
+    lockCb.checked = locked;
+    lockCb.addEventListener("change", () => {
+      saveClientState(order, visible, lockCb.checked);
+      applyClientOrder(order, visible, lockCb.checked);
+    });
+    lockLabel.appendChild(lockCb);
+    lockLabel.append(" Verrouiller l'ordre");
+    menu.appendChild(lockLabel);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const state = loadClientState();
+    applyClientOrder(state.order, state.visible, state.locked);
+    buildClientMenu(state.order, state.visible, state.locked);
+
+    const menuBtn = document.getElementById("client-menu-btn");
+    const menu = document.getElementById("client-menu");
+    menuBtn.addEventListener("click", () => menu.classList.toggle("visible"));
+    document.addEventListener("click", (e) => {
+      if (!menu.contains(e.target) && e.target !== menuBtn) menu.classList.remove("visible");
+    });
+
+    let dragCol = null;
+    const head = document.getElementById("clients-head");
+    head.addEventListener("dragstart", (e) => {
+      dragCol = e.target.dataset.col;
+      e.dataTransfer.effectAllowed = "move";
+    });
+    head.addEventListener("dragover", (e) => {
+      if (state.locked || !dragCol) return;
+      e.preventDefault();
+      const target = e.target.closest("th");
+      if (!target || target.dataset.col === dragCol) return;
+      target.classList.add("drag-over");
+    });
+    head.addEventListener("dragleave", (e) => {
+      const target = e.target.closest("th");
+      if (target) target.classList.remove("drag-over");
+    });
+    head.addEventListener("drop", (e) => {
+      if (state.locked || !dragCol) return;
+      e.preventDefault();
+      const target = e.target.closest("th");
+      if (!target) return;
+      target.classList.remove("drag-over");
+      const targetCol = target.dataset.col;
+      if (!targetCol || targetCol === dragCol) return;
+      const from = state.order.indexOf(dragCol);
+      const to = state.order.indexOf(targetCol);
+      if (from === -1 || to === -1) return;
+      state.order.splice(from, 1);
+      state.order.splice(to, 0, dragCol);
+      saveClientState(state.order, state.visible, state.locked);
+      applyClientOrder(state.order, state.visible, state.locked);
+      buildClientMenu(state.order, state.visible, state.locked);
+      dragCol = null;
+    });
+  });
+</script>
+{% endblock %}

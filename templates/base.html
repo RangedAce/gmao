@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}GMAO{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Accueil</a>
+  <a href="/tickets" class="nav-link {% if request.path.startswith('/tickets') %}active{% endif %}">Tickets</a>
+  <a href="/materiels" class="nav-link {% if request.path.startswith('/materiels') %}active{% endif %}">Materiel</a>
+  <a href="/clients" class="nav-link {% if request.path.startswith('/clients') %}active{% endif %}">Clients</a>
+  <a href="/planning" class="nav-link {% if request.path.startswith('/planning') %}active{% endif %}">Planning</a>
+  <span class="right">
+    {% if current_user %}
+      <a href="/me/password">Mon profil</a>
+      {% if is_admin %} | <a href="/users">Gerer utilisateurs & groupes</a>{% endif %}
+      | {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
+    {% else %}
+      <a href="/login">Connexion</a>
+    {% endif %}
+  </span>
+</nav>
+
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

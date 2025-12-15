@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Ticket #{{ t.id }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<nav>
+  <a href="/">Accueil</a>
+  <a href="/tickets">Tickets</a>
+  <a href="/materiels">Materiel</a>
+  <a href="/clients">Clients</a>
+  <span class="right">
+    {% if current_user %}
+      <a href="/me/password">Mon profil</a>
+      {% if is_admin %} | <a href="/users">Gerer utilisateurs & groupes</a>{% endif %}
+      | {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
+    {% else %}
+      <a href="/login">Connexion</a>
+    {% endif %}
+  </span>
+</nav>
+
+<main>
+<div class="card">
+<h1>Ticket #{{ t.id }} → {{ t.titre }}</h1>
+
+<p><span>Client :</span>
+  <a href="/clients/{{ t.client.id }}">
+    CLT-{{ "%04d"|format(t.client.id) }} → {{ t.client.nom }}
+  </a>
+</p>
+
+<p><span>Sites / agences :</span>
+  {% if t.sites %}
+    <ul>
+      {% for s in t.sites %}
+        <li>
+          {{ s.nom }} {% if s.ville %}({{ s.ville }}){% endif %} → client :
+          <a href="/clients/{{ s.client.id }}">{{ s.client.nom }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    Aucun site associé
+  {% endif %}
+</p>
+
+<p><a href="/tickets/{{ t.id }}/edit">Modifier le ticket</a></p>
+<p><span>Type :</span> {{ t.type }}</p>
+<p><span>Priorité :</span> {{ t.priorite }}</p>
+<p><span>Assigné à :</span>
+  {% if t.assigned_group %}
+    Groupe {{ t.assigned_group.name }}
+  {% elif t.assigned_user %}
+    {{ t.assigned_user.full_name }}
+  {% else %}
+    Non assigné
+  {% endif %}
+</p>
+<p><span>Catégorie matérielle :</span> {{ t.category.name if t.category else "Non définie" }}</p>
+<p><span>Type matériel :</span> {{ t.materiel_type.name if t.materiel_type else "Non défini" }}</p>
+<p><span>État :</span> {{ t.etat }}</p>
+<p><span>Date d'ouverture :</span> {{ t.date_ouverture.strftime("%d/%m/%Y %H:%M") }}</p>
+{% if t.date_cloture %}
+  <p><span>Date de clôture :</span> {{ t.date_cloture.strftime("%d/%m/%Y %H:%M") }}</p>
+{% endif %}
+
+<p><span>Description :</span></p>
+{% if t.description %}
+  <pre>{{ t.description }}</pre>
+{% else %}
+  <p>Aucune description.</p>
+{% endif %}
+
+{% if current_user %}
+  <h2>Modifier le statut</h2>
+  {% if error_status %}<p style="color:red;">{{ error_status }}</p>{% endif %}
+  {% if success_status %}<p style="color:lightgreen;">{{ success_status }}</p>{% endif %}
+  <form method="post">
+    <input type="hidden" name="action" value="status">
+    <select name="etat">
+      <option value="ouvert"   {% if t.etat == "ouvert" %}selected{% endif %}>Ouvert</option>
+      <option value="en_cours" {% if t.etat == "en_cours" %}selected{% endif %}>En cours</option>
+      <option value="resolu"   {% if t.etat == "resolu" %}selected{% endif %}>Résolu</option>
+      <option value="cloture"  {% if t.etat == "cloture" %}selected{% endif %}>Clôturé</option>
+    </select>
+    <button type="submit">Mettre à jour</button>
+  </form>
+
+  {% if t.client.contract_type in ["credit_time", "credit_point"] %}
+    <h3 style="margin-top:16px;">Décompter le contrat ({{ "temps" if t.client.contract_type=="credit_time" else "points" }})</h3>
+    <form method="post" class="mt-1">
+      <input type="hidden" name="action" value="log_contract">
+      {% if t.client.contract_type == "credit_time" %}
+        <div class="form-row">
+          <div>
+            <label>Durée (heures)</label>
+            <input type="number" step="0.25" min="0" name="duration_hours" placeholder="Heures totales">
+          </div>
+          <div>
+            <label>Début</label>
+            <input type="time" name="start_time">
+          </div>
+          <div>
+            <label>Fin</label>
+            <input type="time" name="end_time">
+          </div>
+        </div>
+        <small>Indiquez soit la durée, soit l'heure de début et de fin.</small>
+      {% else %}
+        <div class="form-row">
+          <div>
+            <label>Points utilisés</label>
+            <input type="number" step="1" min="0" name="points_used" placeholder="Nombre de points">
+          </div>
+        </div>
+      {% endif %}
+      <div class="form-row">
+        <div style="width:100%;">
+          <label>Note</label>
+          <input type="text" name="contract_note" placeholder="Note optionnelle">
+        </div>
+      </div>
+      <button type="submit">Décompter</button>
+    </form>
+  {% endif %}
+
+  <h2>Ajouter un commentaire</h2>
+  <form method="post">
+    <input type="hidden" name="action" value="comment">
+    <textarea name="content" rows="3" required></textarea>
+    <button type="submit">Ajouter</button>
+  </form>
+{% endif %}
+
+<h2>Commentaires</h2>
+{% if comments %}
+  {% for c in comments %}
+    <div class="comment">
+      <div class="comment-header">
+        <strong>{{ c.user.full_name }}</strong>
+        <span>{{ c.created_at.strftime("%d/%m/%Y %H:%M") }}</span>
+        {% if c.is_edited %}<span class="badge">édité</span>{% endif %}
+        {% if is_admin and c.previous_content %}
+          <details>
+            <summary>Voir ce qui a été modifié</summary>
+            <pre>{{ edit_diffs.get(c.id, "Aucune diff disponible.") }}</pre>
+          </details>
+        {% endif %}
+      </div>
+      <pre>{{ c.content }}</pre>
+
+      {% set can_edit = (current_user and (current_user.id == c.user_id or is_admin)) %}
+      {% if can_edit %}
+        <details>
+          <summary>Modifier ce commentaire</summary>
+          <form method="post" style="margin-top:6px;">
+            <input type="hidden" name="action" value="edit_comment">
+            <input type="hidden" name="comment_id" value="{{ c.id }}">
+            <textarea name="content" rows="4" style="width:100%;" required>{{ c.content }}</textarea>
+            <button type="submit">Mettre à jour</button>
+          </form>
+        </details>
+      {% endif %}
+    </div>
+  {% endfor %}
+{% else %}
+  <p>Aucun commentaire pour l'instant.</p>
+{% endif %}
+
+{% if contract_logs %}
+  <h2>Décomptes contrat liés à ce ticket</h2>
+  <ul>
+    {% for log in contract_logs %}
+      <li>{{ log.created_at.strftime("%d/%m/%Y %H:%M") }} - {{ "Temps (h)" if log.kind=="credit_time" else "Points" }} : {{ log.amount }}{% if log.note %} — {{ log.note }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+{% if maintenance_contracts %}
+  <h2>Contrats de maintenance du client</h2>
+  <table>
+    <tr>
+      <th>No contrat</th>
+      <th>Duree</th>
+      <th>Type</th>
+      <th>Date effet</th>
+      <th>Date renouvellement</th>
+      <th>Conditions</th>
+      <th>Prix total</th>
+      <th>Resilie</th>
+      <th>Reconductible</th>
+    </tr>
+    {% for c in maintenance_contracts %}
+      <tr>
+        <td>{{ c.numero }}</td>
+        <td>{{ c.duree or "-" }}</td>
+        <td>{{ c.type_contrat or "-" }}</td>
+        <td>{{ c.date_effet.strftime("%d/%m/%Y") if c.date_effet else "-" }}</td>
+        <td>{{ c.date_renouvellement.strftime("%d/%m/%Y") if c.date_renouvellement else "-" }}</td>
+        <td>{{ c.conditions or "-" }}</td>
+        <td>{{ "%.2f"|format(c.prix_total) if c.prix_total is not none else "-" }}</td>
+        <td>{{ "Oui" if c.resilie else "Non" }}</td>
+        <td>{{ "Oui" if c.reconductible else "Non" }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  <h2>Contrats de maintenance du client</h2>
+  <p class="muted">Aucun contrat de maintenance enregistré pour ce client.</p>
+{% endif %}
+
+<p><a href="/tickets">&larr; Retour à la liste</a></p>
+
+</div>
+</main>
+
+</body>
+</html>

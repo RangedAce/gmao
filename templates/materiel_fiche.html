@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Materiel {{ m.id }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<nav>
+  <a href="/">Accueil</a>
+  <a href="/tickets">Tickets</a>
+  <a href="/materiels">Materiel</a>
+  <a href="/clients">Clients</a>
+  <span class="right">
+    {% if current_user %}
+      <a href="/me/password">Mon profil</a>
+      {% if is_admin %} | <a href="/users">Gerer utilisateurs & groupes</a>{% endif %}
+      | {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
+    {% else %}
+      <a href="/login">Connexion</a>
+    {% endif %}
+  </span>
+</nav>
+
+<main>
+  <div class="card">
+    <div style="display:flex; justify-content: space-between; align-items:center;">
+      <h1>Materiel #{{ m.id }}</h1>
+      <a class="btn" href="/materiels/{{ m.id }}/edit">Modifier</a>
+    </div>
+
+    <div class="grid-2 mt-2">
+      <div>
+        <p><span class="muted">Client :</span> CLT-{{ "%04d"|format(m.client.id) }} - {{ m.client.nom }}</p>
+        <p><span class="muted">Categorie :</span> {{ m.category.name if m.category else "N/A" }}</p>
+        <p><span class="muted">Type :</span> {{ m.materiel_type.name if m.materiel_type else m.type }}</p>
+      </div>
+      <div>
+        <p><span class="muted">Modele :</span> {{ m.modele }}</p>
+        <p><span class="muted">Numero de serie :</span> {{ m.numero_serie }}</p>
+        <p><span class="muted">Statut :</span> {{ m.statut }}</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <p><span class="muted">Date installation :</span> {{ m.date_installation }}</p>
+      <p><span class="muted">Fin garantie :</span> {{ m.garantie_fin }}</p>
+    </div>
+
+    <p class="mt-2"><a href="/materiels">Retour liste</a></p>
+  </div>
+</main>
+
+</body>
+</html>
+

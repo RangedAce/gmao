@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Nouveau ticket</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<nav>
+  <a href="/">Accueil</a>
+  <a href="/tickets">Tickets</a>
+  <a href="/materiels">Materiel</a>
+  <a href="/clients">Clients</a>
+  <span class="right">
+    {% if current_user %}
+      <a href="/me/password">Mon profil</a>
+      {% if is_admin %} | <a href="/users">Gerer utilisateurs & groupes</a>{% endif %}
+      | {{ current_user.full_name }} ({{ current_user.role }}) - <a href="/logout">Deconnexion</a>
+    {% endif %}
+  </span>
+</nav>
+
+<main>
+<div class="card">
+<h1>Nouveau ticket</h1>
+
+{% if error %}
+  <p class="error">{{ error }}</p>
+{% endif %}
+
+<form method="post">
+  <label for="id_client">Client</label>
+  <select name="id_client" id="id_client" required>
+    <option value="" disabled selected>-- Choisir un client --</option>
+    {% for c in clients %}
+      <option value="{{ c.id }}">{{ c.nom }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="category_id">Catégorie matérielle (optionnel)</label>
+  <select name="category_id" id="category_id">
+    <option value="">-- Toutes --</option>
+    {% for cat in categories %}
+      <option value="{{ cat.id }}">{{ cat.name }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="materiel_type_id">Type de matériel (optionnel)</label>
+  <select name="materiel_type_id" id="materiel_type_id" disabled>
+    <option value="">-- Choisir --</option>
+    {% for t in types %}
+      <option value="{{ t.id }}" data-cat="{{ t.category_id }}">{{ t.name }}</option>
+    {% endfor %}
+  </select>
+
+  <label>Matériels concernés (optionnel, plusieurs possibles)</label>
+  <div id="materiels-container" style="border:1px solid #ccc; padding:8px; max-height:200px; overflow:auto;">
+    <p id="materiels-placeholder" style="margin:0; color:#555;">Sélectionnez un client pour afficher les matériels.</p>
+  </div>
+
+  <label>Sites / agences concernés (optionnel)</label>
+  <div id="sites-container" style="border:1px solid #ccc; padding:8px; max-height:200px; overflow:auto;">
+    <p id="sites-placeholder" style="margin:0; color:#555;">Sélectionnez un client pour afficher les sites.</p>
+  </div>
+
+<script>
+  const clientSelect = document.getElementById("id_client");
+  const categorySelect = document.getElementById("category_id");
+  const typeSelect = document.getElementById("materiel_type_id");
+  const materielsContainer = document.getElementById("materiels-container");
+  const sitesContainer = document.getElementById("sites-container");
+
+  let cachedData = { materiels: [], sites: [] };
+
+  function setPlaceholder(container, text) {
+    container.innerHTML = `<p style="margin:0; color:#555;">${text}</p>`;
+  }
+
+  function renderCheckboxList(container, items, inputName) {
+    container.innerHTML = "";
+    if (!items.length) {
+      setPlaceholder(container, "Aucun résultat pour ce client.");
+      return;
+    }
+
+    items.forEach(item => {
+      const label = document.createElement("label");
+      label.style.display = "block";
+      label.style.marginBottom = "4px";
+
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.name = inputName;
+      input.value = item.id;
+
+      label.appendChild(input);
+      label.append(` ${item.label}`);
+      container.appendChild(label);
+    });
+  }
+
+  function filterTypeOptions() {
+    const cat = categorySelect.value;
+    const options = typeSelect.querySelectorAll("option");
+    let hasVisible = false;
+    options.forEach(opt => {
+      if (!opt.dataset.cat) return;
+      if (!cat || opt.dataset.cat === cat) {
+        opt.style.display = "block";
+        hasVisible = true;
+      } else {
+        opt.style.display = "none";
+        opt.selected = false;
+      }
+    });
+    typeSelect.disabled = !cat || !hasVisible;
+    if (!cat) typeSelect.value = "";
+  }
+
+  function applyFilters() {
+    const cat = categorySelect.value;
+    const typeId = typeSelect.value;
+    const filtered = (cachedData.materiels || []).filter(m => {
+      if (cat && String(m.category_id || "") !== cat) return false;
+      if (typeId && String(m.type_id || "") !== typeId) return false;
+      return true;
+    });
+    renderCheckboxList(materielsContainer, filtered, "materiels_ids");
+  }
+
+  async function loadDataForClient(clientId) {
+    if (!clientId) {
+      setPlaceholder(materielsContainer, "Sélectionnez un client pour afficher les matériels.");
+      setPlaceholder(sitesContainer, "Sélectionnez un client pour afficher les sites.");
+      return;
+    }
+
+    setPlaceholder(materielsContainer, "Chargement des matériels...");
+    setPlaceholder(sitesContainer, "Chargement des sites...");
+
+    try {
+      const response = await fetch(`/api/client/${clientId}/data`);
+      if (!response.ok) throw new Error("fetch");
+      const data = await response.json();
+
+      cachedData = data;
+      applyFilters();
+      renderCheckboxList(sitesContainer, data.sites || [], "sites_ids");
+    } catch (err) {
+      setPlaceholder(materielsContainer, "Impossible de charger les matériels.");
+      setPlaceholder(sitesContainer, "Impossible de charger les sites.");
+    }
+  }
+
+  clientSelect.addEventListener("change", (e) => {
+    loadDataForClient(e.target.value);
+  });
+  categorySelect.addEventListener("change", () => {
+    filterTypeOptions();
+    applyFilters();
+  });
+  typeSelect.addEventListener("change", applyFilters);
+
+  // Init
+  filterTypeOptions();
+  loadDataForClient(clientSelect.value);
+</script>
+
+  <label for="type">Type</label>
+  <select name="type" id="type" required>
+    <option value="incident">Incident</option>
+    <option value="demande">Demande</option>
+  </select>
+
+  <label for="priorite">Priorité</label>
+  <select name="priorite" id="priorite" required>
+    <option value="basse">Basse</option>
+    <option value="normale" selected>Normale</option>
+    <option value="haute">Haute</option>
+    <option value="critique">Critique</option>
+  </select>
+
+  <label for="assigned_user_id">Assigné à</label>
+  <select name="assigned_user_id" id="assigned_user_id">
+    <option value="">Non assigné</option>
+    {% for u in users %}
+      <option value="{{ u.id }}">{{ u.full_name }} ({{ u.role }})</option>
+    {% endfor %}
+  </select>
+  <label for="assigned_group_id">ou Groupe</label>
+  <select name="assigned_group_id" id="assigned_group_id">
+    <option value="">Aucun</option>
+    {% for g in groups %}
+      <option value="{{ g.id }}">{{ g.name }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="titre">Titre</label>
+  <input type="text" name="titre" id="titre" required>
+
+  <label for="description">Description</label>
+  <textarea name="description" id="description" rows="5"></textarea>
+
+  <button type="submit">Créer le ticket</button>
+</form>
+
+<p><a href="/tickets">← Retour à la liste</a></p>
+
+</div>
+</main>
+
+</body>
+</html>
