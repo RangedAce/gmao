@@ -150,7 +150,7 @@
         {% for t in tickets %}
           <li>
             <a href="/tickets/{{ t.id }}">[#{{ t.id }}] {{ t.titre }}</a>
-            - {{ t.etat }} - priorite {{ t.priorite }}
+            - {{ t.etat|etat_label }} - priorite {{ t.priorite }}
           </li>
         {% endfor %}
       </ul>

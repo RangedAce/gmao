@@ -62,7 +62,7 @@
 </p>
 <p><span>Catégorie matérielle :</span> {{ t.category.name if t.category else "Non définie" }}</p>
 <p><span>Type matériel :</span> {{ t.materiel_type.name if t.materiel_type else "Non défini" }}</p>
-<p><span>État :</span> {{ t.etat }}</p>
+<p><span>État :</span> {{ t.etat|etat_label }}</p>
 <p><span>Date d'ouverture :</span> {{ t.date_ouverture.strftime("%d/%m/%Y %H:%M") }}</p>
 {% if t.date_cloture %}
   <p><span>Date de clôture :</span> {{ t.date_cloture.strftime("%d/%m/%Y %H:%M") }}</p>

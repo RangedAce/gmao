@@ -24,6 +24,26 @@ app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-change-me")
 
 db = SQLAlchemy(app)
 
+# Libellés lisibles pour les états de ticket
+STATUS_LABELS = {
+    "ouvert": "Ouvert",
+    "en_cours": "En cours",
+    "resolu": "Résolu",
+    "cloture": "Clôturé",
+}
+
+
+def format_etat(etat: str) -> str:
+    if not etat:
+        return ""
+    if etat in STATUS_LABELS:
+        return STATUS_LABELS[etat]
+    # Fallback pour ne pas afficher d'underscore si un nouvel état apparaît
+    return etat.replace("_", " ").capitalize()
+
+
+app.jinja_env.filters["etat_label"] = format_etat
+
 # ==========================
 #  MODELES
 # ==========================
