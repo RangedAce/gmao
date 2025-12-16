@@ -15,7 +15,10 @@
 
 {% block content %}
 <div class="card">
-  <h1>Planning</h1>
+  <div style="display:flex; justify-content: space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+    <h1 style="margin:0;">Planning</h1>
+    <div id="resource-filters" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+  </div>
   <div id='calendar'></div>
 </div>
 
@@ -88,6 +91,7 @@
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
+    var filtersEl = document.getElementById('resource-filters');
     var assignModal = document.getElementById('assign-modal');
     var editModal = document.getElementById('edit-modal');
     var closeButtons = document.querySelectorAll('.close-button');
@@ -136,6 +140,40 @@
       }
     }
 
+    var allResources = [];
+    var selectedResources = new Set();
+
+    function renderResourceFilters() {
+      filtersEl.innerHTML = "";
+      if (!allResources.length) return;
+
+      allResources.forEach(function(res) {
+        var lb = document.createElement('label');
+        lb.className = 'pill-checkbox';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = res.id;
+        cb.checked = selectedResources.has(res.id);
+        cb.addEventListener('change', function() {
+          if (cb.checked) selectedResources.add(res.id);
+          else selectedResources.delete(res.id);
+          if (selectedResources.size === 0) {
+            // ne rien afficher si aucun choix
+            calendar.refetchResources();
+            calendar.refetchEvents();
+            return;
+          }
+          calendar.refetchResources();
+          calendar.refetchEvents();
+        });
+        lb.appendChild(cb);
+        var span = document.createElement('span');
+        span.textContent = res.title;
+        lb.appendChild(span);
+        filtersEl.appendChild(lb);
+      });
+    }
+
     var calendar = new FullCalendar.Calendar(calendarEl, {
       schedulerLicenseKey: 'GPL-My-Project-Is-Open-Source', // Or your commercial license key
       locale: 'fr',
@@ -165,8 +203,20 @@
           endTime: '17:30',
         }
       ],
-      events: '/api/planning/events',
-      resources: '/api/planning/resources',
+      resources: function(fetchInfo, successCallback) {
+        var filtered = allResources.filter(function(res) { return selectedResources.size === 0 || selectedResources.has(res.id); });
+        successCallback(filtered);
+      },
+      events: function(fetchInfo, successCallback, failureCallback) {
+        var params = new URLSearchParams();
+        if (fetchInfo.startStr) params.append('start', fetchInfo.startStr);
+        if (fetchInfo.endStr) params.append('end', fetchInfo.endStr);
+        params.append('resources', Array.from(selectedResources).join(','));
+        fetch('/api/planning/events?' + params.toString())
+          .then(resp => resp.ok ? resp.json() : Promise.reject(resp))
+          .then(data => successCallback(data))
+          .catch(() => failureCallback());
+      },
       editable: true,
       eventDrop: function(info) {
         updateEvent(info.event);
@@ -243,6 +293,9 @@
       fetch('/api/planning/resources')
         .then(resp => resp.json())
         .then(data => {
+          allResources = data;
+          selectedResources = new Set(data.map(r => r.id));
+          renderResourceFilters();
           resourceSelect.innerHTML = '<option value="">-- Choisir un technicien ou groupe --</option>';
           data.forEach(res => {
             var opt = document.createElement('option');
@@ -250,6 +303,8 @@
             opt.textContent = res.title;
             resourceSelect.appendChild(opt);
           });
+          calendar.refetchResources();
+          calendar.refetchEvents();
         })
         .catch(() => {
           resourceSelect.innerHTML = '<option value=\"\">Impossible de charger les ressources</option>';

@@ -1350,6 +1350,11 @@ def api_planning_events():
     if not user:
         return jsonify({"error": "Unauthorized"}), 401
 
+    requested_resources = request.args.get("resources", None)
+    requested_set = None
+    if requested_resources is not None:
+        requested_set = {r.strip() for r in requested_resources.split(",") if r.strip()}
+
     start_str = request.args.get("start")
     end_str = request.args.get("end")
 
@@ -1409,6 +1414,9 @@ def api_planning_events():
             resource_id = f"group_{ticket.assigned_group_id}"
         else:
             resource_id = "unassigned"
+
+        if requested_set is not None and resource_id not in requested_set:
+            continue
 
         events.append({
             "id": ticket.id,
