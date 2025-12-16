@@ -6,6 +6,11 @@
   --baltic-blue: #2d5d7b;
 
   --bg: #0f1722;
+  --bg-gradient: radial-gradient(circle at 20% 20%, rgba(194,175,240,0.18), transparent 28%),
+                  radial-gradient(circle at 80% 0%, rgba(69,126,172,0.2), transparent 32%),
+                  linear-gradient(135deg, #0b121c 0%, #0f1722 40%, #0c1b2a 100%);
+  --nav-bg: linear-gradient(90deg, rgba(69,126,172,0.2), rgba(45,93,123,0.6), rgba(145,145,233,0.25));
+  --field-bg: #0f1b2a;
   --text: #e8ebf1;
   --muted: #b8c0cc;
   --card: #152232;
@@ -13,6 +18,27 @@
   --accent: var(--mauve);
   --accent-2: var(--soft-periwinkle);
   --accent-3: var(--steel-blue);
+  --raised-bg: rgba(255,255,255,0.02);
+  --bar-bg: rgba(255,255,255,0.06);
+  --row-alt: rgba(255,255,255,0.02);
+  --row-hover: rgba(194,175,240,0.06);
+}
+
+.theme-light {
+  --bg: #f6f8fb;
+  --bg-gradient: radial-gradient(circle at 18% 20%, rgba(145,145,233,0.14), transparent 26%),
+                  radial-gradient(circle at 82% 6%, rgba(69,126,172,0.18), transparent 28%),
+                  linear-gradient(140deg, #f3f6fc 0%, #f7f9fd 50%, #edf2f9 100%);
+  --nav-bg: linear-gradient(90deg, rgba(145,145,233,0.28), rgba(69,126,172,0.2), rgba(194,175,240,0.18));
+  --field-bg: #eef3fb;
+  --text: #0f1b2a;
+  --muted: #5f6b7a;
+  --card: #ffffff;
+  --border: #d9e1ec;
+  --raised-bg: rgba(0,0,0,0.02);
+  --bar-bg: rgba(15,27,42,0.08);
+  --row-alt: rgba(15,27,42,0.02);
+  --row-hover: rgba(69,126,172,0.08);
 }
 
 * { box-sizing: border-box; }
@@ -21,9 +47,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: "Inter", "Segoe UI", Arial, sans-serif;
-  background: radial-gradient(circle at 20% 20%, rgba(194,175,240,0.18), transparent 28%),
-              radial-gradient(circle at 80% 0%, rgba(69,126,172,0.2), transparent 32%),
-              linear-gradient(135deg, #0b121c 0%, #0f1722 40%, #0c1b2a 100%);
+  background: var(--bg-gradient);
   color: var(--text);
   min-height: 100vh;
 }
@@ -35,7 +59,7 @@ main {
 }
 
 nav {
-  background: linear-gradient(90deg, rgba(69,126,172,0.2), rgba(45,93,123,0.6), rgba(145,145,233,0.25));
+  background: var(--nav-bg);
   border-bottom: 1px solid var(--border);
   padding: 12px 18px;
   display: flex;
@@ -59,7 +83,7 @@ nav a {
 
 nav a:hover {
   background: rgba(194,175,240,0.18);
-  color: #fff;
+  color: var(--text);
 }
 
 #calendar {
@@ -97,7 +121,7 @@ nav a:hover {
 .nav-link.active {
   background: rgba(194,175,240,0.22);
   border: 1px solid var(--border);
-  color: #fff;
+  color: var(--text);
 }
 
 nav .right {
@@ -107,7 +131,7 @@ nav .right {
 }
 
 h1, h2, h3, h4 {
-  color: #fff;
+  color: var(--text);
   letter-spacing: -0.01em;
 }
 
@@ -120,7 +144,7 @@ a {
   font-weight: 600;
 }
 
-a:hover { color: #fff; }
+a:hover { color: var(--accent-3); }
 
 .card {
   background: var(--card);
@@ -166,7 +190,7 @@ a:hover { color: #fff; }
 .btn.ghost {
   background: rgba(194,175,240,0.12);
   border-color: rgba(194,175,240,0.35);
-  color: #fff;
+  color: var(--text);
 }
 
 .btn.full {
@@ -204,8 +228,8 @@ th {
   letter-spacing: 0.02em;
 }
 
-tr:nth-child(even) { background: rgba(255,255,255,0.02); }
-tr:hover { background: rgba(194,175,240,0.06); }
+tr:nth-child(even) { background: var(--row-alt); }
+tr:hover { background: var(--row-hover); }
 
 ul { padding-left: 16px; }
 li { margin: 6px 0; }
@@ -215,7 +239,7 @@ input, select, textarea {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: #0f1b2a;
+  background: var(--field-bg);
   color: var(--text);
   outline: none;
   transition: border 0.2s ease, box-shadow 0.2s ease;
@@ -270,7 +294,7 @@ form .form-row {
 
 .ticket-meta-card {
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.02);
+  background: var(--raised-bg);
   border-radius: 12px;
   padding: 12px;
   min-height: 82px;
@@ -287,14 +311,14 @@ form .form-row {
 }
 
 .meta-value {
-  color: #fff;
+  color: var(--text);
   font-weight: 700;
 }
 
 .description-box {
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: rgba(255,255,255,0.02);
+  background: var(--raised-bg);
   padding: 12px;
   margin-top: 10px;
   white-space: pre-wrap;
@@ -317,13 +341,13 @@ form .form-row {
 .bar-list { display: flex; flex-direction: column; gap: 8px; }
 .bar-row { display: flex; align-items: center; gap: 10px; }
 .bar-label { min-width: 120px; color: var(--muted); font-weight: 600; }
-.bar-track { flex: 1; height: 12px; border-radius: 999px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); position: relative; overflow: hidden; }
+.bar-track { flex: 1; height: 12px; border-radius: 999px; background: var(--bar-bg); border: 1px solid var(--border); position: relative; overflow: hidden; }
 .bar-fill { position: absolute; top:0; left:0; height:100%; border-radius:999px; background: linear-gradient(90deg, var(--soft-periwinkle), var(--steel-blue)); }
 .bar-value { min-width: 36px; text-align: right; color: var(--text); font-weight: 700; }
 
 .table-toolbar { display:flex; justify-content: flex-end; margin-bottom: 10px; position: relative; }
-.col-menu-btn { background: rgba(194,175,240,0.15); color: #fff; border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; cursor: pointer; }
-.col-menu { position: absolute; right:0; top: 38px; background: #0f1b2a; border: 1px solid var(--border); border-radius: 10px; padding: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.35); width: max-content; max-width: 340px; box-sizing: border-box; z-index: 20; display: none; flex-direction: column; align-items: flex-start; gap: 4px; }
+.col-menu-btn { background: rgba(194,175,240,0.15); color: var(--text); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.col-menu { position: absolute; right:0; top: 38px; background: var(--field-bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.35); width: max-content; max-width: 340px; box-sizing: border-box; z-index: 20; display: none; flex-direction: column; align-items: flex-start; gap: 4px; }
 .col-menu.visible { display: flex; }
 .col-menu label { display: flex; align-items: center; justify-content: flex-start; gap: 6px; margin: 4px 0; color: var(--text); white-space: nowrap; }
 .col-menu input[type="checkbox"] {
@@ -349,7 +373,7 @@ form .form-row {
   left: 0;
   top: 100%;
   margin-top: 6px;
-  background: #0f1b2a;
+  background: var(--field-bg);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 8px;

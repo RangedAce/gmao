@@ -413,7 +413,8 @@ def inject_user():
     if "user_id" in session:
         current_user = User.query.get(session["user_id"])
     is_admin = bool(current_user and current_user.role == "admin")
-    return dict(current_user=current_user, is_admin=is_admin)
+    theme = session.get("theme", "dark")
+    return dict(current_user=current_user, is_admin=is_admin, theme=theme)
 
 
 # 🔒 Avant chaque requête : tout est bloqué sauf login/logout/static
@@ -1326,6 +1327,18 @@ def change_password():
             success = True
 
     return render_template("change_password.html", error=error, success=success)
+
+
+@app.route("/me/theme", methods=["POST"])
+def change_theme():
+    user = _get_current_user()
+    if not user:
+        return redirect(url_for("login"))
+
+    requested = request.form.get("theme", "").strip().lower()
+    session["theme"] = "light" if requested == "light" else "dark"
+    next_url = request.form.get("next") or request.referrer or url_for("change_password")
+    return redirect(next_url)
 
 
 # ==========================
