@@ -26,55 +26,93 @@
 
 <main>
 <div class="card">
-<h1>Ticket #{{ t.id }} → {{ t.titre }}</h1>
+  <div style="display:flex; align-items:center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+    <div>
+      <p class="muted" style="margin:0;">Ticket #{{ t.id }}</p>
+      <h1 style="margin:6px 0 0;">{{ t.titre }}</h1>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap: wrap;">
+      <a class="btn ghost pill sm" href="/tickets/{{ t.id }}/edit">Modifier</a>
+      <a class="btn pill sm" href="/tickets">← Retour liste</a>
+    </div>
+  </div>
 
-<p><span>Client :</span>
-  <a href="/clients/{{ t.client.id }}">
-    CLT-{{ "%04d"|format(t.client.id) }} → {{ t.client.nom }}
-  </a>
-</p>
+  <div class="ticket-meta-grid">
+    <div class="ticket-meta-card">
+      <span class="meta-label">Client</span>
+      <div class="meta-value">
+        <a href="/clients/{{ t.client.id }}">
+          CLT-{{ "%04d"|format(t.client.id) }} → {{ t.client.nom }}
+        </a>
+      </div>
+    </div>
+    <div class="ticket-meta-card">
+      <span class="meta-label">Sites / agences</span>
+      <div class="meta-value">
+        {% if t.sites %}
+          <ul style="margin:0; padding-left:16px;">
+            {% for s in t.sites %}
+              <li>
+                {{ s.nom }} {% if s.ville %}({{ s.ville }}){% endif %} → client :
+                <a href="/clients/{{ s.client.id }}">{{ s.client.nom }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <span class="muted">Aucun site associé</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="ticket-meta-card">
+      <span class="meta-label">Type</span>
+      <div class="meta-value">{{ t.type }}</div>
+    </div>
+    <div class="ticket-meta-card">
+      <span class="meta-label">Priorité</span>
+      <div class="meta-value">{{ t.priorite }}</div>
+    </div>
+    <div class="ticket-meta-card">
+      <span class="meta-label">Assigné à</span>
+      <div class="meta-value">
+        {% if t.assigned_group %}
+          Groupe {{ t.assigned_group.name }}
+        {% elif t.assigned_user %}
+          {{ t.assigned_user.full_name }}
+        {% else %}
+          Non assigné
+        {% endif %}
+      </div>
+    </div>
+    <div class="ticket-meta-card">
+      <span class="meta-label">Catégorie matérielle</span>
+      <div class="meta-value">{{ t.category.name if t.category else "Non définie" }}</div>
+    </div>
+    <div class="ticket-meta-card">
+      <span class="meta-label">Type matériel</span>
+      <div class="meta-value">{{ t.materiel_type.name if t.materiel_type else "Non défini" }}</div>
+    </div>
+    <div class="ticket-meta-card">
+      <span class="meta-label">État</span>
+      <div class="meta-value">{{ t.etat|etat_label }}</div>
+    </div>
+    <div class="ticket-meta-card">
+      <span class="meta-label">Date d'ouverture</span>
+      <div class="meta-value">{{ t.date_ouverture.strftime("%d/%m/%Y %H:%M") }}</div>
+    </div>
+    {% if t.date_cloture %}
+    <div class="ticket-meta-card">
+      <span class="meta-label">Date de clôture</span>
+      <div class="meta-value">{{ t.date_cloture.strftime("%d/%m/%Y %H:%M") }}</div>
+    </div>
+    {% endif %}
+  </div>
 
-<p><span>Sites / agences :</span>
-  {% if t.sites %}
-    <ul>
-      {% for s in t.sites %}
-        <li>
-          {{ s.nom }} {% if s.ville %}({{ s.ville }}){% endif %} → client :
-          <a href="/clients/{{ s.client.id }}">{{ s.client.nom }}</a>
-        </li>
-      {% endfor %}
-    </ul>
+  <h2 class="mt-2" style="margin-bottom:6px;">Description</h2>
+  {% if t.description %}
+    <div class="description-box">{{ t.description }}</div>
   {% else %}
-    Aucun site associé
+    <p class="muted">Aucune description.</p>
   {% endif %}
-</p>
-
-<p><a href="/tickets/{{ t.id }}/edit">Modifier le ticket</a></p>
-<p><span>Type :</span> {{ t.type }}</p>
-<p><span>Priorité :</span> {{ t.priorite }}</p>
-<p><span>Assigné à :</span>
-  {% if t.assigned_group %}
-    Groupe {{ t.assigned_group.name }}
-  {% elif t.assigned_user %}
-    {{ t.assigned_user.full_name }}
-  {% else %}
-    Non assigné
-  {% endif %}
-</p>
-<p><span>Catégorie matérielle :</span> {{ t.category.name if t.category else "Non définie" }}</p>
-<p><span>Type matériel :</span> {{ t.materiel_type.name if t.materiel_type else "Non défini" }}</p>
-<p><span>État :</span> {{ t.etat|etat_label }}</p>
-<p><span>Date d'ouverture :</span> {{ t.date_ouverture.strftime("%d/%m/%Y %H:%M") }}</p>
-{% if t.date_cloture %}
-  <p><span>Date de clôture :</span> {{ t.date_cloture.strftime("%d/%m/%Y %H:%M") }}</p>
-{% endif %}
-
-<p><span>Description :</span></p>
-{% if t.description %}
-  <pre>{{ t.description }}</pre>
-{% else %}
-  <p>Aucune description.</p>
-{% endif %}
 
 {% if current_user %}
   <h2>Modifier le statut</h2>

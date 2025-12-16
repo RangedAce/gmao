@@ -118,7 +118,7 @@
     <tbody id="tickets-body">
     {% for t in tickets %}
       <tr>
-        <td data-col="id"><a href="/tickets/{{ t.id }}">{{ t.id }}</a></td>
+        <td data-col="id"><a class="btn pill sm" href="/tickets/{{ t.id }}">Ouvrir #{{ t.id }}</a></td>
         <td data-col="titre">{{ t.titre }}</td>
         <td data-col="client">CLT-{{ "%04d"|format(t.client.id) }} - {{ t.client.nom }}</td>
         <td data-col="materiel">
