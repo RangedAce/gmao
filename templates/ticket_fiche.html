@@ -118,15 +118,18 @@
   <h2>Modifier le statut</h2>
   {% if error_status %}<p style="color:red;">{{ error_status }}</p>{% endif %}
   {% if success_status %}<p style="color:lightgreen;">{{ success_status }}</p>{% endif %}
-  <form method="post">
+  <form method="post" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; max-width:460px;">
     <input type="hidden" name="action" value="status">
-    <select name="etat">
-      <option value="ouvert"   {% if t.etat == "ouvert" %}selected{% endif %}>Ouvert</option>
-      <option value="en_cours" {% if t.etat == "en_cours" %}selected{% endif %}>En cours</option>
-      <option value="resolu"   {% if t.etat == "resolu" %}selected{% endif %}>Résolu</option>
-      <option value="cloture"  {% if t.etat == "cloture" %}selected{% endif %}>Clôturé</option>
-    </select>
-    <button type="submit">Mettre à jour</button>
+    <div style="flex:1; min-width:220px;">
+      <label for="etat" style="margin-top:0;">Statut</label>
+      <select name="etat" id="etat">
+        <option value="ouvert"   {% if t.etat == "ouvert" %}selected{% endif %}>Ouvert</option>
+        <option value="en_cours" {% if t.etat == "en_cours" %}selected{% endif %}>En cours</option>
+        <option value="resolu"   {% if t.etat == "resolu" %}selected{% endif %}>Résolu</option>
+        <option value="cloture"  {% if t.etat == "cloture" %}selected{% endif %}>Clôturé</option>
+      </select>
+    </div>
+    <button type="submit" class="btn pill sm" style="margin-top: 18px;">Mettre à jour</button>
   </form>
 
   {% if t.client.contract_type in ["credit_time", "credit_point"] %}
